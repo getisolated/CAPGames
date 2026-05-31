@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { useQuestionRound } from "@/hooks/use-question-round";
 import { Icon, RoomIcon } from "@/components/cap/icons";
@@ -23,18 +23,29 @@ export function QuestionRoom({
     userId
   );
   const [isPending, startTransition] = useTransition();
+  const [selected, setSelected] = useState<string | null>(null);
   const closed = round !== null && !round.is_active;
   const showResults = closed; // user voit les résultats seulement quand admin a clôturé
 
-  function vote(optionId: string) {
-    if (myOptionId || !round) return;
+  // Reset la sélection à chaque nouvelle manche
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSelected(null);
+  }, [round?.id]);
+
+  function validate() {
+    if (!selected || myOptionId || !round) return;
     startTransition(async () => {
       const supabase = createClient();
       const { error } = await supabase.rpc("cast_answer", {
         p_room_id: room.id,
-        p_option_id: optionId,
+        p_option_id: selected,
       });
-      if (error) toast.error(error.message);
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success("Réponse enregistrée.");
+      }
     });
   }
 
@@ -135,23 +146,27 @@ export function QuestionRoom({
             <div className="pl-cards">
               {options.map((o) => {
                 const isMine = myOptionId === o.id;
+                const isSelected = !myOptionId && selected === o.id;
+                const highlight = isMine || isSelected;
                 const c = counts.find((x) => x.option_id === o.id);
                 const n = c?.n_votes ?? 0;
                 const pct = totalVotes > 0 ? Math.round((n / totalVotes) * 100) : 0;
-                const disabled =
-                  Boolean(myOptionId) || closed || isPending;
+                const disabled = Boolean(myOptionId) || closed || isPending;
                 return (
                   <button
                     key={o.id}
                     type="button"
                     className={
                       "pl-card" +
-                      (isMine ? " voted" : "") +
-                      (myOptionId && !isMine ? " dimmed" : "") +
+                      (highlight ? " voted" : "") +
+                      ((myOptionId || selected) && !highlight ? " dimmed" : "") +
                       (closed ? " closed" : "")
                     }
                     disabled={disabled}
-                    onClick={() => vote(o.id)}
+                    onClick={() => {
+                      if (myOptionId || closed) return;
+                      setSelected((s) => (s === o.id ? null : o.id));
+                    }}
                   >
                     <div
                       className="pl-card-img pl-card-img--mini"
@@ -188,11 +203,13 @@ export function QuestionRoom({
                             ? "TON CHOIX"
                             : myOptionId
                               ? "VOTE VERROUILLÉ"
-                              : "TOUCHE POUR CHOISIR"}
+                              : isSelected
+                                ? "SÉLECTIONNÉ"
+                                : "TOUCHE POUR CHOISIR"}
                         </div>
                       )}
                     </div>
-                    {isMine && (
+                    {highlight && (
                       <div className="pl-card-checkmark">
                         <Icon.Check />
                       </div>
@@ -201,6 +218,36 @@ export function QuestionRoom({
                 );
               })}
             </div>
+
+            {!closed && (
+              <div className="pl-validate">
+                {myOptionId ? (
+                  <div className="pl-validated">
+                    <span className="pl-validated-check">
+                      <Icon.Check />
+                    </span>
+                    <div>
+                      <div className="pl-validated-eyebrow">RÉPONSE VALIDÉE</div>
+                      <div className="pl-validated-name">
+                        {options.find((o) => o.id === myOptionId)?.label ??
+                          "Choix enregistré"}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    style={{ width: "100%" }}
+                    onClick={validate}
+                    disabled={!selected || isPending}
+                  >
+                    {selected ? "Valider ma réponse" : "Choisis une option"}
+                    {selected && <Icon.ArrowRight />}
+                  </button>
+                )}
+              </div>
+            )}
 
             {closed && (
               <div className="pl-validated" style={{ marginTop: 16 }}>
