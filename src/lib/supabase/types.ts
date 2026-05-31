@@ -32,6 +32,7 @@ export interface TeamEmailInvite {
 }
 
 export type BuzzerStyle = "circle" | "arcade" | "physical";
+export type QuizMode = "buzzer" | "questions";
 
 export interface QuizRoom {
   id: string;
@@ -40,8 +41,43 @@ export interface QuizRoom {
   buzzer_style: BuzzerStyle;
   color: string;
   icon: string;
+  mode: QuizMode;
   created_by: string | null;
   created_at: string;
+}
+
+export interface QuizQuestion {
+  id: string;
+  room_id: string;
+  position: number;
+  text: string;
+  image_path: string | null;
+  created_at: string;
+}
+
+export interface QuizOption {
+  id: string;
+  question_id: string;
+  label: string;
+  is_correct: boolean;
+  position: number;
+}
+
+export interface QuizAnswer {
+  id: string;
+  round_id: string;
+  user_id: string;
+  option_id: string;
+  answered_at: string;
+}
+
+export interface QuizAnswerCount {
+  round_id: string;
+  question_id: string;
+  option_id: string;
+  label: string;
+  is_correct: boolean;
+  n_votes: number;
 }
 
 export interface Round {
@@ -51,6 +87,7 @@ export interface Round {
   is_active: boolean;
   started_at: string;
   ended_at: string | null;
+  question_id: string | null;
 }
 
 export interface Buzz {

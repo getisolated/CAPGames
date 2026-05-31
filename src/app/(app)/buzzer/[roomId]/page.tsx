@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { BuzzerRoom } from "./buzzer-room";
+import { QuestionRoom } from "./question-room";
 import type { QuizRoom, Team } from "@/lib/supabase/types";
 
 export default async function BuzzerRoomPage({
@@ -18,6 +19,7 @@ export default async function BuzzerRoomPage({
     .maybeSingle();
 
   if (!room) notFound();
+  const typedRoom = room as QuizRoom;
 
   const {
     data: { user },
@@ -34,11 +36,9 @@ export default async function BuzzerRoomPage({
     ? (teamRaw[0] ?? null)
     : (teamRaw ?? null);
 
-  return (
-    <BuzzerRoom
-      room={room as QuizRoom}
-      userId={user!.id}
-      team={team}
-    />
-  );
+  if (typedRoom.mode === "questions") {
+    return <QuestionRoom room={typedRoom} userId={user!.id} team={team} />;
+  }
+
+  return <BuzzerRoom room={typedRoom} userId={user!.id} team={team} />;
 }

@@ -35,7 +35,7 @@ export function AppShell({
 
   const tabs: Tab[] = [
     { href: "/classement", label: "Scores", I: Icon.Trophy },
-    { href: "/buzzer", label: "Buzzer", I: Icon.Buzzer, needsTeam: true },
+    { href: "/buzzer", label: "Quiz", I: Icon.Buzzer, needsTeam: true },
     { href: "/sondages", label: "Sondages", I: Icon.Poll, needsTeam: true },
     { href: "/photos", label: "Galerie", I: Icon.Photos },
     { href: "/admin", label: "Admin", I: Icon.Admin, adminOnly: true },

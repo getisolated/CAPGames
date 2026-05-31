@@ -8,6 +8,7 @@ import { roomColor } from "@/lib/room-style";
 import type { QuizRoom } from "@/lib/supabase/types";
 import { createRoom, deleteRoom, setRoomStatus } from "./actions";
 import { RoomStylePicker } from "./room-style-picker";
+import { ModeRadio } from "./mode-radio";
 
 export default async function AdminQuizListPage() {
   const supabase = await createClient();
@@ -26,12 +27,13 @@ export default async function AdminQuizListPage() {
           action={createRoom}
           successMsg="Salon créé."
           resetOnSuccess
-          className="flex gap-2"
+          className="flex flex-col gap-2"
         >
           <Input name="name" placeholder="Nom du salon" required />
           <input type="hidden" name="color" value="ember" />
           <input type="hidden" name="icon" value="buzzer" />
-          <Button type="submit">Créer</Button>
+          <ModeRadio />
+          <Button type="submit" className="self-start">Créer</Button>
         </ActionForm>
         <p
           className="t-mono"
@@ -42,7 +44,7 @@ export default async function AdminQuizListPage() {
             marginTop: 6,
           }}
         >
-          Couleur et icône modifiables après création.
+          Mode buzzer : les équipes buzzent. Mode questions : vote sur des questions préparées.
         </p>
       </section>
 
@@ -81,19 +83,23 @@ export default async function AdminQuizListPage() {
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 700, fontSize: 15 }}>{room.name}</div>
-                    <span
-                      className={
-                        "chip " +
-                        (room.status === "open"
-                          ? "live"
-                          : room.status === "closed"
-                            ? "gold"
-                            : "")
-                      }
-                      style={{ marginTop: 4 }}
-                    >
-                      {room.status}
-                    </span>
+                    <div style={{ display: "flex", gap: 6, marginTop: 4, flexWrap: "wrap" }}>
+                      <span
+                        className={
+                          "chip " +
+                          (room.status === "open"
+                            ? "live"
+                            : room.status === "closed"
+                              ? "gold"
+                              : "")
+                        }
+                      >
+                        {room.status}
+                      </span>
+                      <span className="chip">
+                        {room.mode === "questions" ? "QUESTIONS" : "BUZZER"}
+                      </span>
+                    </div>
                   </div>
                   <Link href={`/admin/quizz/${room.id}`}>
                     <Button size="sm">Animer</Button>
