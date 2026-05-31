@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon } from "@/components/cap/icons";
+import { AppHeader } from "@/components/cap/app-header";
 import { TweaksPanel } from "@/components/cap/tweaks-panel";
 
 type ProfileLite = {
@@ -46,7 +47,7 @@ export function AppShell({
     <div className="cg-app">
       <div className="shell-leak" />
       <div className="screen">
-        <div className="statusbar" />
+        <AppHeader profile={profile} />
         {children}
         <nav className="tabbar">
           {visibleTabs.map((tab) => {

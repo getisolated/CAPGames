@@ -393,14 +393,105 @@ h3 .t-serif-it {
 .statusbar { height: 24px; flex-shrink: 0; }
 
 /* ============================================================
+   Header (avatar + logout)
+   ============================================================ */
+.cg-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  background: oklch(8% 0.015 30 / 0.75);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border-bottom: 1px solid oklch(100% 0 0 / 0.05);
+  flex-shrink: 0;
+}
+.cg-header-id {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+.cg-header-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, var(--tertiary-glow), var(--tertiary));
+  color: oklch(15% 0.04 35);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px -2px oklch(60% 0.16 55 / 0.4);
+}
+.cg-header-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.cg-header-name {
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+.cg-header-chip {
+  flex-shrink: 0;
+  font-size: 9px;
+  padding: 3px 8px;
+}
+.cg-header-logout {
+  appearance: none;
+  border: 1px solid oklch(100% 0 0 / 0.1);
+  background: oklch(100% 0 0 / 0.04);
+  color: var(--text-2);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 8px 14px;
+  border-radius: var(--r-pill);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 180ms ease;
+  flex-shrink: 0;
+}
+.cg-header-logout svg {
+  width: 14px;
+  height: 14px;
+}
+.cg-header-logout:hover {
+  background: oklch(50% 0.2 28 / 0.18);
+  border-color: oklch(58% 0.2 28 / 0.4);
+  color: oklch(85% 0.16 28);
+}
+.cg-header-logout:active {
+  transform: translateY(1px);
+}
+
+/* ============================================================
    Tab bar
    ============================================================ */
 .tabbar {
-  position: sticky;
+  position: fixed;
   left: 12px;
   right: 12px;
   bottom: 16px;
-  margin: 0 12px 16px;
   height: 64px;
   background: oklch(11% 0.02 28 / 0.85);
   backdrop-filter: blur(20px) saturate(140%);
@@ -784,10 +875,9 @@ h3 .t-serif-it {
 .g-bulk { margin: 22px 20px 0; display: flex; flex-direction: column; align-items: center; gap: 10px; }
 .g-bulk-hint { font-size: 10px; color: var(--text-4); letter-spacing: 0.05em; text-align: center; max-width: 240px; font-family: var(--font-mono); }
 .g-selectbar {
-  position: sticky;
+  position: fixed;
   left: 14px; right: 14px;
   bottom: 90px;
-  margin: 0 14px;
   height: 72px;
   display: flex; justify-content: space-between; align-items: center;
   padding: 0 8px 0 18px;
