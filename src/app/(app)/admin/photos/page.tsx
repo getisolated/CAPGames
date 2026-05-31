@@ -20,9 +20,11 @@ export default async function AdminPhotosPage() {
   );
 
   return (
-    <PhotosAdmin
-      albums={(albums ?? []) as PhotoAlbum[]}
-      photos={photosWithUrl as (Photo & { url: string | null })[]}
-    />
+    <div style={{ padding: "0 22px" }}>
+      <PhotosAdmin
+        albums={(albums ?? []) as PhotoAlbum[]}
+        photos={photosWithUrl as (Photo & { url: string | null })[]}
+      />
+    </div>
   );
 }
