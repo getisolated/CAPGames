@@ -1,11 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
+import { ActionForm } from "@/components/cap/action-form";
 import { setAdmin } from "./actions";
-
-async function submitSetAdmin(fd: FormData) {
-  "use server";
-  await setAdmin(fd);
-}
 
 export default async function AdminUsersPage() {
   const supabase = await createClient();
@@ -49,7 +45,10 @@ export default async function AdminUsersPage() {
                 </div>
               </div>
               {p.is_admin && <span className="chip gold">ADMIN</span>}
-              <form action={submitSetAdmin}>
+              <ActionForm
+                action={setAdmin}
+                successMsg={p.is_admin ? "Admin révoqué." : "Admin promu."}
+              >
                 <input type="hidden" name="user_id" value={p.id} />
                 <input
                   type="hidden"
@@ -59,7 +58,7 @@ export default async function AdminUsersPage() {
                 <Button size="sm" variant={p.is_admin ? "outline" : "default"}>
                   {p.is_admin ? "Révoquer" : "Promouvoir"}
                 </Button>
-              </form>
+              </ActionForm>
             </div>
           );
         })}

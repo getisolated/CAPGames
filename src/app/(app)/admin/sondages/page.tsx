@@ -4,20 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Icon } from "@/components/cap/icons";
+import { ActionForm } from "@/components/cap/action-form";
 import { createPoll, deletePoll, updatePollStatus } from "./actions";
-
-async function submitCreatePoll(fd: FormData) {
-  "use server";
-  await createPoll(fd);
-}
-async function submitDeletePoll(fd: FormData) {
-  "use server";
-  await deletePoll(fd);
-}
-async function submitUpdatePollStatus(fd: FormData) {
-  "use server";
-  await updatePollStatus(fd);
-}
 
 export default async function AdminPollsPage() {
   const supabase = await createClient();
@@ -32,11 +20,16 @@ export default async function AdminPollsPage() {
         <div className="ad-section-head">
           <div className="t-eyebrow">Créer un sondage</div>
         </div>
-        <form action={submitCreatePoll} className="flex flex-col gap-2">
+        <ActionForm
+          action={createPoll}
+          successMsg="Sondage créé."
+          resetOnSuccess
+          className="flex flex-col gap-2"
+        >
           <Input name="title" placeholder="Titre du sondage" required />
           <Textarea name="description" placeholder="Description (optionnel)" />
           <Button type="submit" className="self-start">Créer</Button>
-        </form>
+        </ActionForm>
       </section>
 
       <section>
@@ -72,25 +65,25 @@ export default async function AdminPollsPage() {
                 <Button size="sm">Éditer</Button>
               </Link>
               {poll.status === "draft" && (
-                <form action={submitUpdatePollStatus}>
+                <ActionForm action={updatePollStatus} successMsg="Sondage ouvert.">
                   <input type="hidden" name="id" value={poll.id} />
                   <input type="hidden" name="status" value="open" />
                   <Button size="sm" variant="secondary">Ouvrir</Button>
-                </form>
+                </ActionForm>
               )}
               {poll.status === "open" && (
-                <form action={submitUpdatePollStatus}>
+                <ActionForm action={updatePollStatus} successMsg="Sondage clôturé.">
                   <input type="hidden" name="id" value={poll.id} />
                   <input type="hidden" name="status" value="closed" />
                   <Button size="sm" variant="secondary">Clôturer</Button>
-                </form>
+                </ActionForm>
               )}
-              <form action={submitDeletePoll}>
+              <ActionForm action={deletePoll} successMsg="Sondage supprimé.">
                 <input type="hidden" name="id" value={poll.id} />
                 <Button size="sm" variant="destructive" aria-label="Supprimer">
                   <Icon.X />
                 </Button>
-              </form>
+              </ActionForm>
             </div>
           ))}
           {(!polls || polls.length === 0) && (

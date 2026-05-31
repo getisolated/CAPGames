@@ -3,23 +3,11 @@ import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Icon, RoomIcon } from "@/components/cap/icons";
+import { ActionForm } from "@/components/cap/action-form";
 import { roomColor } from "@/lib/room-style";
 import type { QuizRoom } from "@/lib/supabase/types";
 import { createRoom, deleteRoom, setRoomStatus } from "./actions";
 import { RoomStylePicker } from "./room-style-picker";
-
-async function submitCreateRoom(fd: FormData) {
-  "use server";
-  await createRoom(fd);
-}
-async function submitDeleteRoom(fd: FormData) {
-  "use server";
-  await deleteRoom(fd);
-}
-async function submitSetRoomStatus(fd: FormData) {
-  "use server";
-  await setRoomStatus(fd);
-}
 
 export default async function AdminQuizListPage() {
   const supabase = await createClient();
@@ -34,12 +22,17 @@ export default async function AdminQuizListPage() {
         <div className="ad-section-head">
           <div className="t-eyebrow">Créer un salon</div>
         </div>
-        <form action={submitCreateRoom} className="flex gap-2">
+        <ActionForm
+          action={createRoom}
+          successMsg="Salon créé."
+          resetOnSuccess
+          className="flex gap-2"
+        >
           <Input name="name" placeholder="Nom du salon" required />
           <input type="hidden" name="color" value="ember" />
           <input type="hidden" name="icon" value="buzzer" />
           <Button type="submit">Créer</Button>
-        </form>
+        </ActionForm>
         <p
           className="t-mono"
           style={{
@@ -106,25 +99,25 @@ export default async function AdminQuizListPage() {
                     <Button size="sm">Animer</Button>
                   </Link>
                   {room.status !== "open" && (
-                    <form action={submitSetRoomStatus}>
+                    <ActionForm action={setRoomStatus} successMsg={null}>
                       <input type="hidden" name="id" value={room.id} />
                       <input type="hidden" name="status" value="open" />
                       <Button size="sm" variant="secondary">Ouvrir</Button>
-                    </form>
+                    </ActionForm>
                   )}
                   {room.status === "open" && (
-                    <form action={submitSetRoomStatus}>
+                    <ActionForm action={setRoomStatus} successMsg={null}>
                       <input type="hidden" name="id" value={room.id} />
                       <input type="hidden" name="status" value="closed" />
                       <Button size="sm" variant="secondary">Fermer</Button>
-                    </form>
+                    </ActionForm>
                   )}
-                  <form action={submitDeleteRoom}>
+                  <ActionForm action={deleteRoom} successMsg="Salon supprimé.">
                     <input type="hidden" name="id" value={room.id} />
                     <Button size="sm" variant="destructive" aria-label="Supprimer">
                       <Icon.X />
                     </Button>
-                  </form>
+                  </ActionForm>
                 </div>
                 <RoomStylePicker
                   roomId={room.id}
