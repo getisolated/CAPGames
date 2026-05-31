@@ -1,6 +1,20 @@
 -- =============================================================================
 -- CAP Games — Fonctions et triggers
+-- ⚠️ DESTRUCTIF : supprime et recrée toutes les fonctions et triggers.
 -- =============================================================================
+
+-- Drop trigger d'abord (dépend de la fonction)
+drop trigger if exists on_auth_user_created on auth.users;
+
+-- Drop fonctions (cascade pour entraîner d'éventuelles dépendances)
+drop function if exists public.is_admin() cascade;
+drop function if exists public.handle_new_user() cascade;
+drop function if exists public.place_buzz(uuid) cascade;
+drop function if exists public.start_round(uuid) cascade;
+drop function if exists public.end_round(uuid) cascade;
+drop function if exists public.adjust_team_score(uuid, integer) cascade;
+drop function if exists public.set_admin(uuid, boolean) cascade;
+drop function if exists public.cast_vote(uuid, uuid) cascade;
 
 -- =============================================================================
 -- helper: vérifier si l'utilisateur courant est admin

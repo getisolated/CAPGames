@@ -42,6 +42,10 @@ Dans **SQL Editor → + New query**, exécutez **dans l'ordre** le contenu de ch
 4. `supabase/migrations/0004_views_realtime_storage.sql` (vues, realtime, buckets)
 5. `supabase/migrations/0005_design_system.sql` (colonnes couleur/short/buzzer_style)
 
+> ⚠️ **Les migrations 0001 → 0004 sont destructives** : elles font `drop table cascade` / `drop function` / `drop policy` au début pour pouvoir être ré-exécutées proprement. **Toutes les données existantes (équipes, photos, sondages, comptes utilisateurs) sont effacées** à chaque réexécution. La 0005 est idempotente non-destructive (préserve les données équipes).
+>
+> Les buckets storage et leurs fichiers sont conservés (la 0004 ne touche qu'aux policies et aux vues).
+
 Vérifiez ensuite dans **Database → Tables** que `teams`, `profiles`, `quiz_rooms`, `polls`, etc. existent.
 
 ### Configurer l'auth OTP

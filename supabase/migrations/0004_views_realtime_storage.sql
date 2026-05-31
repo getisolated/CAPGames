@@ -1,6 +1,39 @@
 -- =============================================================================
 -- CAP Games — Vues, Realtime et Storage
+-- ⚠️ DESTRUCTIF pour les vues, policies storage et publication realtime.
+-- Les buckets et fichiers existants sont CONSERVÉS (on conflict do nothing).
 -- =============================================================================
+
+-- Drop des vues
+drop view if exists public.poll_results   cascade;
+drop view if exists public.leaderboard    cascade;
+drop view if exists public.buzzes_ordered cascade;
+
+-- Retrait des tables de la publication realtime (no-op si pas dedans)
+do $$
+declare
+  tables text[] := array[
+    'buzzes', 'rounds', 'quiz_rooms', 'teams', 'polls', 'poll_votes', 'photos'
+  ];
+  t text;
+begin
+  foreach t in array tables loop
+    begin
+      execute format('alter publication supabase_realtime drop table public.%I', t);
+    exception when others then
+      -- table pas dans la publication ou publication absente : on ignore
+      null;
+    end;
+  end loop;
+end$$;
+
+-- Drop des policies storage (recréées plus bas)
+drop policy if exists "team_logos_write_admin"                  on storage.objects;
+drop policy if exists "poll_choices_write_admin"                on storage.objects;
+drop policy if exists "photos_insert_own"                       on storage.objects;
+drop policy if exists "photos_select_approved_or_own_or_admin"  on storage.objects;
+drop policy if exists "photos_delete_admin"                     on storage.objects;
+drop policy if exists "photos_update_admin"                     on storage.objects;
 
 -- =============================================================================
 -- VIEW: poll_results — résultats agrégés (anonymes) d'un sondage

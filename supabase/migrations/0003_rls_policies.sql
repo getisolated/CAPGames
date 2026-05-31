@@ -1,6 +1,27 @@
 -- =============================================================================
 -- CAP Games — Row Level Security
+-- ⚠️ DESTRUCTIF : supprime et recrée toutes les policies.
 -- =============================================================================
+
+-- Drop toutes les policies existantes sur les tables CAP Games
+do $$
+declare
+  r record;
+  tables text[] := array[
+    'profiles', 'teams', 'team_email_invites', 'quiz_rooms', 'rounds',
+    'buzzes', 'photo_albums', 'photos', 'polls', 'poll_choices', 'poll_votes'
+  ];
+  t text;
+begin
+  foreach t in array tables loop
+    for r in
+      select policyname from pg_policies
+      where schemaname = 'public' and tablename = t
+    loop
+      execute format('drop policy if exists %I on public.%I', r.policyname, t);
+    end loop;
+  end loop;
+end$$;
 
 -- Activation RLS sur toutes les tables
 alter table public.profiles            enable row level security;

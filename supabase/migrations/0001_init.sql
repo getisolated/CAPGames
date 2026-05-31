@@ -1,9 +1,29 @@
 -- =============================================================================
 -- CAP Games — Schéma initial
+-- ⚠️ DESTRUCTIF : supprime et recrée toutes les tables, types et données.
 -- =============================================================================
 
 -- Extensions
 create extension if not exists "uuid-ossp";
+
+-- =============================================================================
+-- DROP : ordre inverse des dépendances. CASCADE pour entraîner FK + policies.
+-- =============================================================================
+drop table if exists public.poll_votes         cascade;
+drop table if exists public.poll_choices       cascade;
+drop table if exists public.polls              cascade;
+drop table if exists public.photos             cascade;
+drop table if exists public.photo_albums       cascade;
+drop table if exists public.buzzes             cascade;
+drop table if exists public.rounds             cascade;
+drop table if exists public.quiz_rooms         cascade;
+drop table if exists public.team_email_invites cascade;
+drop table if exists public.profiles           cascade;
+drop table if exists public.teams              cascade;
+
+drop type if exists public.room_status   cascade;
+drop type if exists public.photo_status  cascade;
+drop type if exists public.poll_status   cascade;
 
 -- =============================================================================
 -- TABLE: profiles
