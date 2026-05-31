@@ -74,29 +74,23 @@ create trigger on_auth_user_created
 -- =============================================================================
 -- RPC: place_buzz
 -- Pose un buzz pour la manche active du salon. Timestamp serveur autoritaire.
--- Idempotent : si l'utilisateur a déjà buzzé, renvoie le buzz existant.
+-- Idempotent : ON CONFLICT DO NOTHING. Le client refetch via la vue
+-- buzzes_ordered (Realtime) pour récupérer sa position.
 -- =============================================================================
 create or replace function public.place_buzz(p_room_id uuid)
-returns table (
-  id uuid,
-  round_id uuid,
-  user_id uuid,
-  buzzed_at timestamptz,
-  buzz_position integer
-)
+returns void
 language plpgsql
 security definer
 set search_path = public
 as $$
 declare
   v_round_id uuid;
-  v_user_id uuid := auth.uid();
+  v_user_id  uuid := auth.uid();
 begin
   if v_user_id is null then
     raise exception 'unauthenticated';
   end if;
 
-  -- récupère la manche active
   select r.id into v_round_id
   from public.rounds r
   where r.room_id = p_room_id and r.is_active
@@ -106,26 +100,9 @@ begin
     raise exception 'no active round for room %', p_room_id;
   end if;
 
-  -- insère le buzz (ignoré si doublon)
   insert into public.buzzes (round_id, user_id)
   values (v_round_id, v_user_id)
   on conflict (round_id, user_id) do nothing;
-
-  -- renvoie le buzz (existant ou nouveau) avec sa position dans l'ordre
-  return query
-  with ordered as (
-    select
-      b.id,
-      b.round_id,
-      b.user_id,
-      b.buzzed_at,
-      (row_number() over (order by b.buzzed_at))::integer as buzz_position
-    from public.buzzes b
-    where b.round_id = v_round_id
-  )
-  select ordered.id, ordered.round_id, ordered.user_id, ordered.buzzed_at, ordered.buzz_position
-  from ordered
-  where ordered.user_id = v_user_id;
 end;
 $$;
 

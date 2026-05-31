@@ -4,8 +4,9 @@ import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { useBuzzerRealtime } from "@/hooks/use-buzzer-realtime";
 import { createClient } from "@/lib/supabase/client";
-import { Icon } from "@/components/cap/icons";
+import { Icon, RoomIcon } from "@/components/cap/icons";
 import { teamColor } from "@/lib/team-style";
+import { roomColor } from "@/lib/room-style";
 import type { BuzzerStyle, QuizRoom, Team } from "@/lib/supabase/types";
 
 const BUZZ_AUDIO_DATA_URL =
@@ -66,21 +67,38 @@ export function BuzzerRoom({
   return (
     <div className="screen buzzer-screen" data-phase={phase}>
       <div className="b-head">
-        <div className="b-head-left">
-          <div className="t-eyebrow">
-            {activeRound
-              ? `Manche ${activeRound.round_number} · ${room.name}`
-              : room.name}
+        <div className="b-head-left" style={{ display: "flex", gap: 12 }}>
+          <div
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 12,
+              display: "grid",
+              placeItems: "center",
+              background: roomColor(room.color),
+              color: "oklch(98% 0.01 60)",
+              flexShrink: 0,
+            }}
+          >
+            <RoomIcon iconKey={room.icon} />
           </div>
-          {team && (
-            <div className="b-team">
-              <div className="b-team-dot" style={{ background: teamColor(team) }} />
-              <span>{team.name}</span>
-              <span className="chip" style={{ marginLeft: 8 }}>
-                {team.score} PTS
-              </span>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div className="t-eyebrow">
+              {activeRound
+                ? `Manche ${activeRound.round_number}`
+                : "En attente"}
             </div>
-          )}
+            <div style={{ fontWeight: 700, fontSize: 16, marginTop: 2 }}>{room.name}</div>
+            {team && (
+              <div className="b-team" style={{ marginTop: 6 }}>
+                <div className="b-team-dot" style={{ background: teamColor(team) }} />
+                <span>{team.name}</span>
+                <span className="chip" style={{ marginLeft: 8 }}>
+                  {team.score} PTS
+                </span>
+              </div>
+            )}
+          </div>
         </div>
         <div className="b-head-right">
           {phase === "waiting" && <span className="chip">EN ATTENTE</span>}

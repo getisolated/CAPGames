@@ -38,6 +38,8 @@ export interface QuizRoom {
   name: string;
   status: RoomStatus;
   buzzer_style: BuzzerStyle;
+  color: string;
+  icon: string;
   created_by: string | null;
   created_at: string;
 }

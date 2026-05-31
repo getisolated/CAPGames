@@ -7,15 +7,40 @@ import { requireAdmin } from "@/lib/auth";
 export async function createRoom(formData: FormData) {
   const { profile } = await requireAdmin();
   const name = String(formData.get("name") ?? "").trim();
+  const color = String(formData.get("color") ?? "ember");
+  const icon = String(formData.get("icon") ?? "buzzer");
   if (!name) return { ok: false as const, error: "Nom requis." };
 
   const supabase = await createClient();
   const { error } = await supabase
     .from("quiz_rooms")
-    .insert({ name, created_by: profile.id });
+    .insert({ name, color, icon, created_by: profile.id });
   if (error) return { ok: false as const, error: error.message };
 
   revalidatePath("/admin/quizz");
+  return { ok: true as const };
+}
+
+export async function setRoomStyle(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  const color = String(formData.get("color") ?? "");
+  const icon = String(formData.get("icon") ?? "");
+  if (!id) return { ok: false as const, error: "ID requis." };
+
+  const patch: { color?: string; icon?: string } = {};
+  if (color) patch.color = color;
+  if (icon) patch.icon = icon;
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("quiz_rooms")
+    .update(patch)
+    .eq("id", id);
+  if (error) return { ok: false as const, error: error.message };
+
+  revalidatePath(`/admin/quizz`);
+  revalidatePath(`/admin/quizz/${id}`);
   return { ok: true as const };
 }
 

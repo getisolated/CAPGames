@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { Icon } from "@/components/cap/icons";
+import { Icon, RoomIcon } from "@/components/cap/icons";
+import { roomColor } from "@/lib/room-style";
+import type { QuizRoom } from "@/lib/supabase/types";
 
 export default async function BuzzerListPage() {
   const supabase = await createClient();
@@ -35,35 +37,37 @@ export default async function BuzzerListPage() {
           </div>
         ) : (
           <ul className="pl-list" style={{ padding: "0 22px" }}>
-            {rooms.map((room) => (
-              <li key={room.id}>
-                <Link
-                  href={`/buzzer/${room.id}`}
-                  className="pl-poll"
-                  style={{ gridTemplateColumns: "auto 1fr auto", padding: "16px 18px", gap: 14 }}
-                >
-                  <div
-                    className="g-icon-btn"
-                    style={{
-                      width: 48,
-                      height: 48,
-                      background: "linear-gradient(180deg, var(--primary-glow), var(--primary))",
-                      color: "white",
-                      border: 0,
-                    }}
+            {(rooms as QuizRoom[]).map((room) => {
+              return (
+                <li key={room.id}>
+                  <Link
+                    href={`/buzzer/${room.id}`}
+                    className="pl-poll"
+                    style={{ gridTemplateColumns: "auto 1fr auto", padding: "16px 18px", gap: 14 }}
                   >
-                    <Icon.Buzzer />
-                  </div>
-                  <div style={{ minWidth: 0 }}>
-                    <div className="pl-poll-title">{room.name}</div>
-                    <div className="pl-poll-q">Touche pour entrer dans le salon</div>
-                  </div>
-                  <span className="pl-poll-arrow">
-                    <Icon.ArrowRight />
-                  </span>
-                </Link>
-              </li>
-            ))}
+                    <div
+                      className="g-icon-btn"
+                      style={{
+                        width: 48,
+                        height: 48,
+                        background: roomColor(room.color),
+                        color: "oklch(98% 0.01 60)",
+                        border: 0,
+                      }}
+                    >
+                      <RoomIcon iconKey={room.icon} />
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <div className="pl-poll-title">{room.name}</div>
+                      <div className="pl-poll-q">Touche pour entrer dans le salon</div>
+                    </div>
+                    <span className="pl-poll-arrow">
+                      <Icon.ArrowRight />
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>

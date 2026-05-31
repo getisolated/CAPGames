@@ -123,4 +123,92 @@ export const Icon = {
       <path d="M21 12H9" />
     </svg>
   ),
+  Music: () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 18V5l12-2v13" />
+      <circle cx="6" cy="18" r="3" />
+      <circle cx="18" cy="16" r="3" />
+    </svg>
+  ),
+  Movie: () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="6" width="20" height="14" rx="2" />
+      <path d="M2 10h20M7 6V3M12 6V3M17 6V3" />
+    </svg>
+  ),
+  Sport: () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 3v18M3 12h18M5 5l14 14M19 5L5 19" />
+    </svg>
+  ),
+  Art: () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3a9 9 0 1 0 0 18 3 3 0 0 0 0-6h-1a2 2 0 0 1 0-4h6a3 3 0 0 0 3-3 9 9 0 0 0-8-5z" />
+      <circle cx="7" cy="11" r="1" /><circle cx="9" cy="7" r="1" />
+      <circle cx="14" cy="6" r="1" /><circle cx="17" cy="9" r="1" />
+    </svg>
+  ),
+  Food: () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 11h18l-1 9H4l-1-9z" />
+      <path d="M12 11V3M9 5l3-2 3 2" />
+    </svg>
+  ),
+  Travel: () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 16c0 1-1 1.5-3 1.5L3 13l2-2 6 1 5-5 2 1-3 5 3 1 3-3 1 1-1 4z" />
+    </svg>
+  ),
+  History: () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" />
+    </svg>
+  ),
+  Tech: () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="14" rx="2" />
+      <path d="M7 22h10M12 18v4" />
+    </svg>
+  ),
+  Star: () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3l3 6 6 1-4.5 4.5L18 21l-6-3-6 3 1.5-6.5L3 10l6-1z" />
+    </svg>
+  ),
+  Heart: () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 21s-7-4.5-9-9a5 5 0 0 1 9-3 5 5 0 0 1 9 3c-2 4.5-9 9-9 9z" />
+    </svg>
+  ),
 };
+
+import type { RoomIconKey } from "@/lib/room-style";
+
+const ROOM_ICON_MAP: Record<RoomIconKey, () => React.ReactElement> = {
+  buzzer:  Icon.Buzzer,
+  music:   Icon.Music,
+  movie:   Icon.Movie,
+  sport:   Icon.Sport,
+  art:     Icon.Art,
+  food:    Icon.Food,
+  travel:  Icon.Travel,
+  history: Icon.History,
+  tech:    Icon.Tech,
+  star:    Icon.Star,
+  heart:   Icon.Heart,
+  sparkle: Icon.Sparkle,
+};
+
+/**
+ * Composant qui sélectionne l'icône à partir d'une clé.
+ * Évite la création de composant pendant le render (interdit par React 19).
+ */
+export function RoomIcon({ iconKey }: { iconKey: string | null | undefined }) {
+  const Comp =
+    iconKey && iconKey in ROOM_ICON_MAP
+      ? ROOM_ICON_MAP[iconKey as RoomIconKey]
+      : Icon.Buzzer;
+  return <Comp />;
+}

@@ -50,9 +50,18 @@ export function LeaderboardView({
                     <div key={t.id} className={"lb-podium-col rank-" + rank}>
                       <div
                         className="lb-podium-avatar"
-                        style={{ background: teamColor(t) }}
+                        style={{ background: teamColor(t), overflow: "hidden" }}
                       >
-                        <span className="t-display">{teamShort(t)}</span>
+                        {t.logo_url ? (
+                          /* eslint-disable-next-line @next/next/no-img-element */
+                          <img
+                            src={t.logo_url}
+                            alt={t.name}
+                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                          />
+                        ) : (
+                          <span className="t-display">{teamShort(t)}</span>
+                        )}
                         {rank === 1 && <div className="lb-podium-crown">★</div>}
                       </div>
                       <div className="lb-podium-name">{teamShortName(t.name)}</div>
@@ -78,8 +87,20 @@ export function LeaderboardView({
                   <div className="lb-rank t-display">
                     {String(i + 1).padStart(2, "0")}
                   </div>
-                  <div className="lb-avatar" style={{ background: teamColor(t) }}>
-                    {teamShort(t)}
+                  <div
+                    className="lb-avatar"
+                    style={{ background: teamColor(t), overflow: "hidden" }}
+                  >
+                    {t.logo_url ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img
+                        src={t.logo_url}
+                        alt={t.name}
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      />
+                    ) : (
+                      teamShort(t)
+                    )}
                   </div>
                   <div>
                     <div className="lb-name">{t.name}</div>

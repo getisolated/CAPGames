@@ -5,6 +5,7 @@ import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { toast } from "sonner";
 import { Icon } from "@/components/cap/icons";
+import { PhotoLightbox } from "@/components/cap/photo-lightbox";
 import { uploadPhoto } from "./actions";
 import type { Photo, PhotoAlbum } from "@/lib/supabase/types";
 
@@ -18,11 +19,8 @@ export function GalleryView({
   photos: PhotoWithUrl[];
 }) {
   const [albumFilter, setAlbumFilter] = useState<string | null>(null);
-  const [selectMode, setSelectMode] = useState(false);
-  const [selection, setSelection] = useState<Set<string>>(new Set());
-  const [showSheet, setShowSheet] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [isPending, startTransition] = useTransition();
-  const longRef = useRef<NodeJS.Timeout | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   const filtered = useMemo(
@@ -33,41 +31,18 @@ export function GalleryView({
     [photos, albumFilter]
   );
 
-  function tapTile(id: string) {
-    if (selectMode) {
-      const next = new Set(selection);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      setSelection(next);
-      if (next.size === 0) setSelectMode(false);
-    }
-  }
-
-  function longPressStart(id: string) {
-    longRef.current = setTimeout(() => {
-      setSelectMode(true);
-      setSelection(new Set([id]));
-    }, 420);
-  }
-  function longPressEnd() {
-    if (longRef.current) clearTimeout(longRef.current);
-  }
-
-  function cancelSelect() {
-    setSelectMode(false);
-    setSelection(new Set());
-  }
-
-  function selectAll() {
-    setSelection(new Set(filtered.map((p) => p.id)));
-  }
-
-  async function downloadZip(items: PhotoWithUrl[], filename: string) {
-    if (items.length === 0) return;
-    toast.info(`Préparation de ${items.length} photo(s)…`);
+  async function downloadAlbum() {
+    if (filtered.length === 0) return;
+    const label =
+      albumFilter === null
+        ? "cap-games-photos.zip"
+        : `cap-games-${
+            albums.find((a) => a.id === albumFilter)?.name ?? "album"
+          }.zip`;
+    toast.info(`Préparation de ${filtered.length} photo(s)…`);
     const zip = new JSZip();
     await Promise.all(
-      items.map(async (p) => {
+      filtered.map(async (p) => {
         if (!p.url) return;
         const res = await fetch(p.url);
         const blob = await res.blob();
@@ -75,24 +50,7 @@ export function GalleryView({
       })
     );
     const content = await zip.generateAsync({ type: "blob" });
-    saveAs(content, filename);
-  }
-
-  async function downloadAction() {
-    if (selectMode && selection.size > 0) {
-      const items = filtered.filter((p) => selection.has(p.id));
-      await downloadZip(items, "cap-games-selection.zip");
-    } else {
-      const label =
-        albumFilter === null
-          ? "cap-games-photos.zip"
-          : `cap-games-${
-              albums.find((a) => a.id === albumFilter)?.name ?? "album"
-            }.zip`;
-      await downloadZip(filtered, label);
-    }
-    setShowSheet(false);
-    cancelSelect();
+    saveAs(content, label);
   }
 
   function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -114,6 +72,16 @@ export function GalleryView({
     });
   }
 
+  const lightboxPhotos = useMemo(
+    () =>
+      filtered.map((p) => ({
+        id: p.id,
+        url: p.url,
+        original_filename: p.original_filename,
+      })),
+    [filtered]
+  );
+
   return (
     <div className="screen gallery-screen">
       <div className="g-head">
@@ -124,29 +92,16 @@ export function GalleryView({
           </h1>
         </div>
         <div className="g-head-actions">
-          {selectMode ? (
-            <button
-              type="button"
-              className="g-icon-btn"
-              onClick={cancelSelect}
-              aria-label="Annuler"
-            >
-              <Icon.X />
-            </button>
-          ) : (
-            <>
-              <span className="chip">{photos.length} PHOTOS</span>
-              <button
-                type="button"
-                className="g-icon-btn"
-                onClick={() => fileRef.current?.click()}
-                aria-label="Envoyer"
-                disabled={isPending}
-              >
-                <Icon.Upload />
-              </button>
-            </>
-          )}
+          <span className="chip">{photos.length} PHOTOS</span>
+          <button
+            type="button"
+            className="g-icon-btn"
+            onClick={() => fileRef.current?.click()}
+            aria-label="Envoyer"
+            disabled={isPending}
+          >
+            <Icon.Upload />
+          </button>
           <input
             ref={fileRef}
             type="file"
@@ -180,32 +135,27 @@ export function GalleryView({
       </div>
 
       <div className="scroll-area">
-        {!selectMode && (
-          <div className="g-banner">
-            <div className="g-banner-inner">
-              <div>
-                <div
-                  className="t-eyebrow"
-                  style={{ color: "var(--tertiary-glow)" }}
-                >
-                  EN LIVE
-                </div>
-                <div className="g-banner-title t-display">
-                  Le photographe<br />
-                  <span className="t-serif-it">est dans la salle.</span>
-                </div>
-                <div className="g-banner-sub">
-                  Les nouvelles photos apparaissent en temps réel.
-                </div>
+        <div className="g-banner">
+          <div className="g-banner-inner">
+            <div>
+              <div className="t-eyebrow" style={{ color: "var(--tertiary-glow)" }}>
+                EN LIVE
               </div>
-              <div className="g-banner-orb">
-                <div className="orb-ring" />
-                <div className="orb-ring two" />
-                <div className="orb-core" />
+              <div className="g-banner-title t-display">
+                Le photographe<br />
+                <span className="t-serif-it">est dans la salle.</span>
+              </div>
+              <div className="g-banner-sub">
+                Les nouvelles photos apparaissent en temps réel.
               </div>
             </div>
+            <div className="g-banner-orb">
+              <div className="orb-ring" />
+              <div className="orb-ring two" />
+              <div className="orb-core" />
+            </div>
           </div>
-        )}
+        </div>
 
         {filtered.length === 0 ? (
           <div className="px-6">
@@ -218,113 +168,56 @@ export function GalleryView({
           </div>
         ) : (
           <div className="g-grid">
-            {filtered.map((p) => {
-              const selected = selection.has(p.id);
-              return (
-                <div
-                  key={p.id}
-                  className={"photo-tile" + (selected ? " selected" : "")}
-                  onClick={() => tapTile(p.id)}
-                  onMouseDown={() => longPressStart(p.id)}
-                  onMouseUp={longPressEnd}
-                  onMouseLeave={longPressEnd}
-                  onTouchStart={() => longPressStart(p.id)}
-                  onTouchEnd={longPressEnd}
-                >
-                  {p.url ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img
-                      src={p.url}
-                      alt={p.original_filename ?? ""}
-                      className="photo-img"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="photo-img img-ph">?</div>
-                  )}
-                  {selectMode && (
-                    <div className={"photo-check check" + (selected ? " on" : "")}>
-                      {selected && <Icon.Check />}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+            {filtered.map((p, i) => (
+              <button
+                key={p.id}
+                type="button"
+                className="photo-tile"
+                onClick={() => setLightboxIndex(i)}
+                aria-label={`Voir la photo ${p.original_filename ?? i + 1}`}
+              >
+                {p.url ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src={p.url}
+                    alt={p.original_filename ?? ""}
+                    className="photo-img"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="photo-img img-ph">?</div>
+                )}
+              </button>
+            ))}
           </div>
         )}
 
-        {!selectMode && filtered.length > 0 && (
+        {filtered.length > 0 && (
           <div className="g-bulk">
             <button
               type="button"
-              className="btn btn-ghost"
-              onClick={() => setShowSheet(true)}
+              className="btn btn-gold"
+              onClick={downloadAlbum}
             >
-              <Icon.Folder /> Télécharger tout
+              <Icon.Download /> Télécharger
+              {albumFilter
+                ? ` l’album « ${albums.find((a) => a.id === albumFilter)?.name ?? ""} »`
+                : " toutes les photos"}{" "}
+              ({filtered.length})
             </button>
             <div className="g-bulk-hint">
-              Appui long sur une photo pour activer la sélection multiple.
+              Touche une photo pour l&apos;ouvrir, puis le bouton télécharger en haut.
             </div>
           </div>
         )}
       </div>
 
-      {selectMode && (
-        <div className="g-selectbar">
-          <div className="g-selectbar-info">
-            <div className="g-selectbar-count">{selection.size}</div>
-            <div>
-              <div className="g-selectbar-label">
-                sélectionnée{selection.size > 1 ? "s" : ""}
-              </div>
-              <button
-                type="button"
-                className="g-selectbar-all"
-                onClick={selectAll}
-              >
-                Tout sélectionner
-              </button>
-            </div>
-          </div>
-          <button
-            type="button"
-            className="btn btn-gold"
-            style={{ height: 48, fontSize: 14 }}
-            disabled={selection.size === 0}
-            onClick={() => setShowSheet(true)}
-          >
-            <Icon.Download /> Télécharger
-          </button>
-        </div>
-      )}
-
-      {showSheet && (
-        <div className="sheet">
-          <div className="sheet-handle" />
-          <div className="t-eyebrow">EXPORT</div>
-          <h3 className="sheet-title">Télécharger la sélection</h3>
-          <p className="sheet-sub">
-            {selection.size > 0
-              ? `${selection.size} photo${selection.size > 1 ? "s" : ""} prête${selection.size > 1 ? "s" : ""} au téléchargement.`
-              : `Le dossier complet (${filtered.length} photos) sera préparé en .zip.`}
-          </p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <button
-              type="button"
-              className="btn btn-gold"
-              onClick={downloadAction}
-            >
-              <Icon.Download /> Démarrer le téléchargement
-            </button>
-            <button
-              type="button"
-              className="btn btn-ghost"
-              onClick={() => setShowSheet(false)}
-            >
-              Annuler
-            </button>
-          </div>
-        </div>
+      {lightboxIndex !== null && (
+        <PhotoLightbox
+          photos={lightboxPhotos}
+          startIndex={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+        />
       )}
     </div>
   );
