@@ -35,9 +35,6 @@
   --r-lg: 22px;
   --r-xl: 28px;
   --r-pill: 999px;
-
-  /* Container */
-  --app-w: 480px;
 }
 
 [data-palette="noir"] {
@@ -160,12 +157,11 @@ body {
     linear-gradient(180deg, var(--bg-2), var(--bg));
 }
 
-/* App container — full bleed sur mobile, centré max 480px desktop */
+/* App container — full bleed sur toutes les tailles d'écran */
 .cg-app {
   position: relative;
-  width: min(var(--app-w), 100vw);
+  width: 100%;
   min-height: 100dvh;
-  margin: 0 auto;
   display: flex;
   flex-direction: column;
   isolation: isolate;
@@ -174,15 +170,6 @@ body {
     radial-gradient(ellipse 120% 80% at 50% -10%, oklch(22% 0.1 28 / 0.45), transparent 60%),
     radial-gradient(circle at 110% 110%, oklch(35% 0.14 55 / 0.16), transparent 55%),
     linear-gradient(180deg, var(--bg-2), var(--bg));
-  box-shadow: inset 0 0 0 1px oklch(30% 0.005 30 / 0.4);
-}
-@media (min-width: 481px) {
-  .cg-app {
-    border-radius: 28px;
-    min-height: min(900px, 100dvh);
-    height: min(900px, 100dvh);
-    margin: max(0px, calc((100dvh - 900px) / 2)) auto;
-  }
 }
 
 /* shell leak (subtle warm glow at top) */
