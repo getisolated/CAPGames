@@ -2,8 +2,6 @@ import { createClient } from "@/lib/supabase/server";
 import { LeaderboardView } from "./leaderboard-view";
 import type { LeaderboardRow } from "@/lib/supabase/types";
 
-export const dynamic = "force-dynamic";
-
 export default async function ClassementPage() {
   const supabase = await createClient();
   const {

@@ -19,8 +19,6 @@ async function submitUpdatePollStatus(fd: FormData) {
   await updatePollStatus(fd);
 }
 
-export const dynamic = "force-dynamic";
-
 export default async function AdminPollsPage() {
   const supabase = await createClient();
   const { data: polls } = await supabase

@@ -7,8 +7,6 @@ async function submitSetAdmin(fd: FormData) {
   await setAdmin(fd);
 }
 
-export const dynamic = "force-dynamic";
-
 export default async function AdminUsersPage() {
   const supabase = await createClient();
   const { data: profiles } = await supabase

@@ -52,7 +52,7 @@ export function TeamsAdmin({ teams, profiles, invites }: Props) {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8" style={{ margin: "calc(var(--spacing) * 4)" }}>
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Créer une équipe</h2>
         <form onSubmit={handle(createTeam)} className="flex gap-2">

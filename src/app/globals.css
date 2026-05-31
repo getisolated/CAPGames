@@ -578,6 +578,48 @@ h3 .t-serif-it {
   100% { background-position: 200% 0; }
 }
 
+/* ============================================================
+   Loading skeleton
+   ============================================================ */
+.cg-shimmer {
+  background: linear-gradient(
+    90deg,
+    oklch(100% 0 0 / 0.03) 0%,
+    oklch(100% 0 0 / 0.08) 50%,
+    oklch(100% 0 0 / 0.03) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+  border-radius: 12px;
+}
+.cg-skel-head {
+  padding: 16px 22px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.cg-skel-eyebrow {
+  width: 140px;
+  height: 12px;
+  border-radius: 6px;
+}
+.cg-skel-title {
+  width: 70%;
+  max-width: 280px;
+  height: 40px;
+  border-radius: 8px;
+}
+.cg-skel-list {
+  padding: 0 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.cg-skel-row {
+  height: 72px;
+  border-radius: 16px;
+}
+
 /* Sheet (modal-like) */
 .sheet {
   position: absolute;
@@ -1144,7 +1186,12 @@ h3 .t-serif-it {
   font-family: var(--font-body); font-weight: 600; font-size: 12px;
   cursor: pointer; text-decoration: none; text-align: center;
 }
-.ad-tab.on { background: var(--text); color: oklch(10% 0.02 30); border-color: var(--text); }
+.ad-tab.on {
+  background: linear-gradient(180deg, var(--tertiary-glow), var(--tertiary));
+  color: oklch(15% 0.04 35);
+  border-color: var(--tertiary);
+  box-shadow: 0 4px 14px -4px oklch(60% 0.16 55 / 0.55);
+}
 .ad-quizz, .ad-scores, .ad-photos, .ad-section { padding: 0 22px; display: flex; flex-direction: column; gap: 14px; }
 .ad-now { padding: 18px 20px; }
 .ad-now-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }

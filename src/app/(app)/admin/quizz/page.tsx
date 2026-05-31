@@ -22,8 +22,6 @@ async function submitSetRoomStatus(fd: FormData) {
   await setRoomStatus(fd);
 }
 
-export const dynamic = "force-dynamic";
-
 export default async function AdminQuizListPage() {
   const supabase = await createClient();
   const { data: rooms } = await supabase

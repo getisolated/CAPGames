@@ -2,8 +2,6 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Icon } from "@/components/cap/icons";
 
-export const dynamic = "force-dynamic";
-
 export default async function AdminHome() {
   const supabase = await createClient();
   const [{ count: nbTeams }, { count: nbUsers }, { count: nbPhotos }, { count: nbRooms }] =

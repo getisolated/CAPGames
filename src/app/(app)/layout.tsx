@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getCachedUser, getCachedProfile } from "@/lib/auth";
 import { AppShell } from "@/components/app-shell";
 
 export default async function AppLayout({
@@ -7,18 +7,10 @@ export default async function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const { user } = await getCachedUser();
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id, email, full_name, team_id, is_admin")
-    .eq("id", user.id)
-    .single();
+  const profile = await getCachedProfile();
 
   return (
     <AppShell

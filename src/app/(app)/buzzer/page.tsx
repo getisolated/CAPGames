@@ -2,8 +2,6 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Icon } from "@/components/cap/icons";
 
-export const dynamic = "force-dynamic";
-
 export default async function BuzzerListPage() {
   const supabase = await createClient();
   const { data: rooms } = await supabase

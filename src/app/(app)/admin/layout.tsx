@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
+import { AdminTabs } from "./admin-tabs";
 
 const tabs = [
   { href: "/admin", label: "Cockpit" },
@@ -36,13 +36,7 @@ export default async function AdminLayout({
         <span className="chip gold">ADMIN</span>
       </div>
 
-      <div className="ad-tabs">
-        {tabs.map((t) => (
-          <Link key={t.href} href={t.href} className="ad-tab">
-            {t.label}
-          </Link>
-        ))}
-      </div>
+      <AdminTabs tabs={tabs} />
 
       <div className="scroll-area">{children}</div>
     </div>
