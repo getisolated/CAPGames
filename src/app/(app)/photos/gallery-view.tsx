@@ -6,7 +6,8 @@ import { saveAs } from "file-saver";
 import { toast } from "sonner";
 import { Icon } from "@/components/cap/icons";
 import { PhotoLightbox } from "@/components/cap/photo-lightbox";
-import { uploadPhoto } from "./actions";
+import { createClient } from "@/lib/supabase/client";
+import { registerUploadedPhoto } from "./actions";
 import type { Photo, PhotoAlbum } from "@/lib/supabase/types";
 
 type PhotoWithUrl = Photo & { url: string | null };
@@ -56,19 +57,61 @@ export function GalleryView({
   function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
     if (!files || files.length === 0) return;
+    const input = e.target;
+
     startTransition(async () => {
-      let ok = 0;
-      let err = 0;
-      for (const file of Array.from(files)) {
-        const fd = new FormData();
-        fd.append("file", file);
-        const res = await uploadPhoto(fd);
-        if (res.ok) ok++;
-        else err++;
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("Session expirée, reconnecte-toi.");
+        return;
       }
+
+      let ok = 0;
+      const errors: string[] = [];
+
+      for (const file of Array.from(files)) {
+        try {
+          const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
+          const path = `${user.id}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
+
+          // Upload direct vers Supabase Storage (pas de limite Vercel)
+          const { error: upErr } = await supabase.storage
+            .from("photos")
+            .upload(path, file, { contentType: file.type });
+          if (upErr) {
+            errors.push(`${file.name} : ${upErr.message}`);
+            continue;
+          }
+
+          // On enregistre la row côté serveur (RLS s'applique)
+          const res = await registerUploadedPhoto({
+            storage_path: path,
+            original_filename: file.name,
+          });
+          if (!res.ok) {
+            errors.push(`${file.name} : ${res.error}`);
+            continue;
+          }
+          ok++;
+        } catch (err) {
+          errors.push(
+            `${file.name} : ${err instanceof Error ? err.message : "Erreur"}`
+          );
+        }
+      }
+
       if (ok > 0) toast.success(`${ok} photo(s) envoyée(s) pour validation.`);
-      if (err > 0) toast.error(`${err} échec(s).`);
-      e.target.value = "";
+      if (errors.length > 0) {
+        toast.error(
+          errors.length === 1
+            ? errors[0]
+            : `${errors.length} échec(s) — ${errors[0]}`
+        );
+      }
+      input.value = "";
     });
   }
 

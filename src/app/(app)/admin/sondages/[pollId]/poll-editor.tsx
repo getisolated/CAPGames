@@ -266,11 +266,12 @@ export function PollEditor({
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1">
               <Label>Équipe restreinte (optionnel)</Label>
-              <Select name="restricted_team_id">
+              <Select name="restricted_team_id" defaultValue="__none__">
                 <SelectTrigger>
                   <SelectValue placeholder="Aucune restriction" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="__none__">Aucune restriction</SelectItem>
                   {teams.map((t) => (
                     <SelectItem key={t.id} value={t.id}>
                       {t.name}

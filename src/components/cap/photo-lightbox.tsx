@@ -122,6 +122,20 @@ export function PhotoLightbox({
         </button>
       )}
 
+      <div
+        className="cg-lightbox-bar cg-lightbox-bar-bottom"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          type="button"
+          className="btn btn-gold cg-lightbox-download"
+          onClick={download}
+        >
+          <Icon.Download />
+          Télécharger cette photo
+        </button>
+      </div>
+
       <div className="cg-lightbox-img-wrap" onClick={(e) => e.stopPropagation()}>
         {current.url ? (
           /* eslint-disable-next-line @next/next/no-img-element */

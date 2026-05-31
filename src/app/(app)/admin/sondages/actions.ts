@@ -59,8 +59,11 @@ export async function createChoice(formData: FormData) {
   await requireAdmin();
   const pollId = String(formData.get("poll_id") ?? "");
   const label = String(formData.get("label") ?? "").trim() || null;
+  const rawRestrictedTeam = String(formData.get("restricted_team_id") ?? "");
   const restrictedTeamId =
-    String(formData.get("restricted_team_id") ?? "") || null;
+    rawRestrictedTeam && rawRestrictedTeam !== "__none__"
+      ? rawRestrictedTeam
+      : null;
   const restrictionMessage =
     String(formData.get("restriction_message") ?? "").trim() || null;
   const position = Number(formData.get("position") ?? 0);
