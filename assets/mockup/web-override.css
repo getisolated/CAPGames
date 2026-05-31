@@ -1,0 +1,80 @@
+/* ============================================================
+   CAP Games — WEB overrides
+   Strips the iPhone bezel + iOS chrome. The app fills ALL available
+   space and stays fully responsive on any platform (phone, tablet,
+   desktop) — no fixed format, no letterbox.
+   Loaded AFTER styles.css / screens.css.
+   ============================================================ */
+
+html.web body {
+  background: #060405;
+  display: block;
+  overflow: hidden;
+}
+
+html.web #root {
+  width: 100vw;
+  height: 100dvh;
+  display: block;
+}
+
+/* Wrapper fills the viewport and carries the themed background edge-to-edge.
+   The content column is centered on top of it — full height, no letterbox. */
+html.web .iphone {
+  position: relative;
+  width: 100vw;
+  height: 100dvh;
+  max-height: none;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 60% 60% at 50% -8%, oklch(19% 0.09 28 / 0.55), transparent 62%),
+    radial-gradient(ellipse 46% 60% at 88% 110%, oklch(30% 0.12 55 / 0.2), transparent 60%),
+    radial-gradient(ellipse 46% 60% at 12% 110%, oklch(24% 0.1 28 / 0.16), transparent 60%),
+    linear-gradient(180deg, var(--bg-2), var(--bg));
+}
+
+/* Content column — full width on phones, a centered readable column on wider
+   screens. Transparent so the wrapper background flows behind it. */
+html.web .phone {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+@media (min-width: 560px) {
+  html.web .phone {
+    width: min(480px, 100%);
+  }
+}
+
+/* Hide all iOS decorators */
+html.web .dynamic-island,
+html.web .ios-statusbar,
+html.web .home-indicator {
+  display: none !important;
+}
+
+/* Reclaim the space the iOS status bar reserved */
+html.web .statusbar {
+  height: 14px;
+}
+
+/* Tab bar sits closer to the bottom without the home indicator. It's absolute
+   to the centered .phone column, so it stays aligned with the content. */
+html.web .tabbar {
+  bottom: 16px;
+}
+
+/* Slightly reduce bottom scroll padding now the home indicator is gone */
+html.web .scroll-area {
+  padding-bottom: 104px;
+}
+html.web .auth-screen {
+  padding-bottom: 18px;
+}

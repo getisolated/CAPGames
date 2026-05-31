@@ -1,0 +1,50 @@
+import Link from "next/link";
+import { requireAdmin } from "@/lib/auth";
+
+const tabs = [
+  { href: "/admin", label: "Cockpit" },
+  { href: "/admin/equipes", label: "Équipes" },
+  { href: "/admin/quizz", label: "Quizz" },
+  { href: "/admin/photos", label: "Photos" },
+  { href: "/admin/sondages", label: "Sondages" },
+  { href: "/admin/points", label: "Points" },
+  { href: "/admin/utilisateurs", label: "Users" },
+];
+
+export default async function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  await requireAdmin();
+
+  return (
+    <div className="screen admin-screen">
+      <div className="ad-head">
+        <div>
+          <div
+            className="t-eyebrow"
+            style={{ color: "var(--tertiary-glow)" }}
+          >
+            MODE ANIMATEUR
+          </div>
+          <h1 className="ad-title t-display">
+            Cockpit<br />
+            <span className="t-serif-it">de soirée.</span>
+          </h1>
+        </div>
+        <span className="chip gold">ADMIN</span>
+      </div>
+
+      <div className="ad-tabs">
+        {tabs.map((t) => (
+          <Link key={t.href} href={t.href} className="ad-tab">
+            {t.label}
+          </Link>
+        ))}
+      </div>
+
+      <div className="scroll-area">{children}</div>
+    </div>
+  );
+}

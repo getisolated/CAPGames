@@ -1,0 +1,531 @@
+/* ============================================================
+   CAP Games — Design tokens & base styles
+   Esthétique : festif premium / club night
+   ============================================================ */
+
+:root {
+  /* base palette */
+  --bg: oklch(8% 0.015 30);
+  --bg-2: oklch(11% 0.022 28);
+  --surface: oklch(14% 0.028 26);
+  --surface-2: oklch(18% 0.032 25);
+  --surface-3: oklch(22% 0.04 24);
+  --line: oklch(28% 0.035 25);
+  --line-soft: oklch(22% 0.03 26);
+
+  --primary: oklch(53.194% 0.20025 28.801);
+  --primary-soft: oklch(48% 0.18 28);
+  --primary-glow: oklch(60% 0.22 28);
+  --secondary: oklch(32.556% 0.11125 22.926);
+  --tertiary: oklch(70.445% 0.15456 57.009);     /* gold/amber */
+  --tertiary-soft: oklch(62% 0.14 57);
+  --tertiary-glow: oklch(78% 0.15 60);
+
+  --text: oklch(96% 0.015 70);
+  --text-2: oklch(78% 0.02 50);
+  --text-3: oklch(58% 0.025 40);
+  --text-4: oklch(42% 0.02 35);
+
+  --success: oklch(70% 0.16 145);
+  --danger: oklch(58% 0.21 25);
+
+  /* type */
+  --font-display: "Big Shoulders Display", "Arial Narrow", sans-serif;
+  --font-body: "Space Grotesk", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-serif: "Instrument Serif", Georgia, serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  /* shape */
+  --r-sm: 10px;
+  --r-md: 16px;
+  --r-lg: 22px;
+  --r-xl: 28px;
+  --r-pill: 999px;
+
+  /* phone canvas */
+  --phone-w: 420px;
+  --phone-h: 900px;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #050304;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased;
+  height: 100%;
+}
+
+body {
+  background: #000;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+#root { width: 100%; height: 100dvh; display: grid; place-items: center; }
+
+/* ------- iPhone bezel — frames the app on desktop, falls back to full-bleed on real mobile ------- */
+.iphone {
+  position: relative;
+  width: min(420px, 100vw);
+  height: min(calc(420px / 9 * 19.5), 100dvh);
+  max-height: 100dvh;
+  background: #000;
+  border-radius: 50px;
+  padding: 12px;
+  box-sizing: border-box;
+  box-shadow: none;
+  overflow: visible;
+}
+
+/* Side buttons removed for cleaner look */
+.iphone::before,
+.iphone::after { content: none; }
+.iphone-buttons { display: none; }
+
+/* Screen — inner content area */
+.phone {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background:
+    radial-gradient(ellipse 120% 80% at 50% -10%, oklch(22% 0.1 28 / 0.55), transparent 60%),
+    radial-gradient(circle at 110% 110%, oklch(35% 0.14 55 / 0.18), transparent 55%),
+    linear-gradient(180deg, var(--bg-2), var(--bg));
+  border-radius: 38px;
+  overflow: hidden;
+  isolation: isolate;
+  box-shadow: inset 0 0 0 1px oklch(30% 0.005 30 / 0.6);
+}
+
+/* Dynamic Island */
+.dynamic-island {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 35px;
+  background: #000;
+  border-radius: 24px;
+  z-index: 100;
+  pointer-events: none;
+}
+
+/* iOS Status Bar — real clock + signal + wifi + battery */
+.ios-statusbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 19px 32px 0;
+  z-index: 90;
+  color: var(--text);
+  font-family: -apple-system, "SF Pro Text", "SF Pro", system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  pointer-events: none;
+}
+.ios-statusbar .ios-time {
+  width: 60px;
+  text-align: center;
+}
+.ios-statusbar .ios-right {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.ios-statusbar svg { display: block; }
+.ios-battery {
+  width: 26px;
+  height: 12px;
+  border: 1.2px solid oklch(100% 0 0 / 0.45);
+  border-radius: 3.5px;
+  position: relative;
+  padding: 1px;
+}
+.ios-battery::after {
+  content: "";
+  position: absolute;
+  right: -3px;
+  top: 3px;
+  bottom: 3px;
+  width: 1.5px;
+  background: oklch(100% 0 0 / 0.45);
+  border-radius: 1px;
+}
+.ios-battery i {
+  display: block;
+  height: 100%;
+  width: 78%;
+  background: var(--text);
+  border-radius: 1.5px;
+}
+
+/* Home indicator */
+.home-indicator {
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 134px;
+  height: 5px;
+  background: oklch(96% 0.015 70 / 0.85);
+  border-radius: 3px;
+  z-index: 95;
+  pointer-events: none;
+}
+
+/* ------- Film grain overlay ------- */
+.grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+  mix-blend-mode: overlay;
+  opacity: 0.35;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.8  0 0 0 0 0.6  0 0 0 0 0.3  0 0 0 0.55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  background-size: 220px 220px;
+}
+
+/* subtle light leak at top */
+.shell-leak {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 220px;
+  background: radial-gradient(ellipse 80% 100% at 50% 0%, oklch(55% 0.18 28 / 0.22), transparent 70%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ------- Screen layout ------- */
+.screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  z-index: 2;
+}
+
+/* Thin top spacer — pushes content below the iOS status bar */
+.statusbar {
+  height: 56px;
+  flex-shrink: 0;
+}
+
+.scroll-area {
+  flex: 1;
+  overflow: auto;
+  scrollbar-width: none;
+  padding-bottom: 120px;
+}
+.scroll-area::-webkit-scrollbar { display: none; }
+
+/* ------- Typography utilities ------- */
+.t-display {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: 0.005em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+.t-serif-it {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  /* Give italic Instrument Serif its own line context — long descenders need
+     line-height 1.5 + padding-bottom 0.2em to clear within the inline-block. */
+  display: inline-block;
+  line-height: 1.45;
+  padding-bottom: 0.2em;
+  vertical-align: top;
+}
+.t-display .t-serif-it,
+h1 .t-serif-it, h2 .t-serif-it, h3 .t-serif-it {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  text-transform: none;
+}
+.t-mono {
+  font-family: var(--font-mono);
+  font-feature-settings: "ss01";
+}
+.t-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+/* ------- Buttons ------- */
+.btn {
+  appearance: none;
+  border: 0;
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: transform 120ms ease, background 200ms ease, box-shadow 200ms ease;
+  user-select: none;
+}
+.btn svg { width: 18px; height: 18px; flex-shrink: 0; }
+.btn:active { transform: translateY(1px) scale(0.99); }
+
+.btn-primary {
+  height: 56px;
+  padding: 0 22px;
+  border-radius: var(--r-pill);
+  background: linear-gradient(180deg, var(--primary-glow), var(--primary));
+  color: oklch(98% 0.01 60);
+  font-size: 15px;
+  white-space: nowrap;
+  box-shadow:
+    inset 0 1px 0 oklch(100% 0 0 / 0.25),
+    inset 0 -2px 0 oklch(0% 0 0 / 0.25),
+    0 16px 30px -10px oklch(50% 0.2 28 / 0.55),
+    0 0 0 1px oklch(60% 0.18 28 / 0.4);
+}
+.btn-gold {
+  height: 56px;
+  padding: 0 22px;
+  border-radius: var(--r-pill);
+  background: linear-gradient(180deg, var(--tertiary-glow), var(--tertiary));
+  color: oklch(15% 0.04 35);
+  font-size: 15px;
+  white-space: nowrap;
+  box-shadow:
+    inset 0 1px 0 oklch(100% 0 0 / 0.45),
+    inset 0 -2px 0 oklch(0% 0 0 / 0.18),
+    0 16px 30px -10px oklch(60% 0.16 55 / 0.55);
+}
+.btn-ghost {
+  height: 48px;
+  padding: 0 18px;
+  border-radius: var(--r-pill);
+  background: oklch(100% 0 0 / 0.04);
+  color: var(--text);
+  border: 1px solid oklch(100% 0 0 / 0.1);
+  font-size: 14px;
+}
+.btn-ghost:hover { background: oklch(100% 0 0 / 0.07); }
+
+/* ------- Cards / surfaces ------- */
+.card {
+  background: linear-gradient(180deg, var(--surface-2), var(--surface));
+  border: 1px solid oklch(100% 0 0 / 0.06);
+  border-radius: var(--r-lg);
+}
+
+/* ------- Bottom tab bar ------- */
+.tabbar {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 28px;
+  height: 64px;
+  background: oklch(11% 0.02 28 / 0.85);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border: 1px solid oklch(100% 0 0 / 0.07);
+  border-radius: 26px;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  align-items: center;
+  z-index: 20;
+  box-shadow: 0 14px 36px -10px oklch(0% 0 0 / 0.6);
+}
+.tabbar .tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--text-3);
+  font-family: var(--font-body);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 600;
+  cursor: pointer;
+  position: relative;
+  transition: color 180ms ease;
+}
+.tabbar .tab.active { color: var(--text); }
+.tabbar .tab.active::after {
+  content: "";
+  position: absolute;
+  top: 8px;
+  width: 24px;
+  height: 3px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--primary), var(--tertiary));
+}
+.tabbar .tab svg { width: 22px; height: 22px; }
+
+/* ------- Wordmark ------- */
+.wordmark {
+  font-family: var(--font-display);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.wordmark .dot {
+  width: 8px;
+  height: 8px;
+  background: var(--tertiary);
+  border-radius: 50%;
+  display: inline-block;
+  box-shadow: 0 0 12px var(--tertiary);
+  transform: translateY(-3px);
+}
+.wordmark .games {
+  color: var(--tertiary);
+  font-style: italic;
+  font-family: var(--font-display);
+}
+
+/* ------- Pills / chips ------- */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  padding: 5px 10px;
+  border-radius: var(--r-pill);
+  background: oklch(100% 0 0 / 0.05);
+  border: 1px solid oklch(100% 0 0 / 0.08);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-2);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-family: var(--font-body);
+}
+.chip.gold {
+  background: oklch(60% 0.14 57 / 0.15);
+  border-color: oklch(70% 0.15 57 / 0.35);
+  color: var(--tertiary-glow);
+}
+.chip.red {
+  background: oklch(50% 0.2 28 / 0.18);
+  border-color: oklch(58% 0.2 28 / 0.4);
+  color: oklch(78% 0.16 30);
+}
+.chip.live {
+  background: oklch(55% 0.2 25 / 0.2);
+  color: oklch(85% 0.17 30);
+  border-color: oklch(60% 0.2 28 / 0.5);
+}
+.chip.live::before {
+  content: "";
+  width: 6px; height: 6px;
+  background: oklch(70% 0.22 28);
+  border-radius: 50%;
+  box-shadow: 0 0 8px oklch(70% 0.22 28);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.75); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes breathe {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 oklch(50% 0.18 28 / 0.45); }
+  50%      { transform: scale(1.015); box-shadow: 0 0 0 18px oklch(50% 0.18 28 / 0); }
+}
+
+@keyframes float-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@keyframes wait-pulse {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 1; }
+}
+
+/* sheet (modal-like) */
+.sheet {
+  position: absolute;
+  inset: auto 0 0 0;
+  background: linear-gradient(180deg, var(--surface-2), var(--bg-2));
+  border-top: 1px solid oklch(100% 0 0 / 0.08);
+  border-radius: 28px 28px 0 0;
+  padding: 16px 20px calc(110px) 20px;
+  z-index: 30;
+  box-shadow: 0 -20px 60px -10px oklch(0% 0 0 / 0.6);
+  animation: float-up 300ms ease both;
+}
+.sheet-handle {
+  width: 42px; height: 4px;
+  background: oklch(100% 0 0 / 0.2);
+  border-radius: 2px;
+  margin: 0 auto 14px;
+}
+
+/* skeleton img */
+.img-ph {
+  background:
+    repeating-linear-gradient(135deg, oklch(20% 0.03 30) 0 12px, oklch(17% 0.03 30) 12px 24px);
+  position: relative;
+  overflow: hidden;
+  color: oklch(55% 0.03 30);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  display: grid;
+  place-items: center;
+}
+.img-ph::before {
+  content: "";
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at 30% 20%, oklch(40% 0.08 28 / 0.35), transparent 60%);
+}
+
+/* checkbox */
+.check {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid oklch(100% 0 0 / 0.5);
+  background: oklch(0% 0 0 / 0.3);
+  display: grid; place-items: center;
+  transition: all 180ms ease;
+}
+.check.on {
+  background: linear-gradient(180deg, var(--tertiary-glow), var(--tertiary));
+  border-color: var(--tertiary);
+  box-shadow: 0 0 0 3px oklch(70% 0.14 57 / 0.25);
+}
+.check.on svg { color: oklch(15% 0.04 35); }
