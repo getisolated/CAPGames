@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Icon } from "@/components/cap/icons";
+import { usePollRealtime } from "@/hooks/use-poll-realtime";
 import { castVote } from "./actions";
 import type {
   Poll,
@@ -18,7 +19,7 @@ export function PollView({
   choices,
   myVote,
   profile,
-  results,
+  results: initialResults,
   isAdmin,
 }: {
   poll: Poll;
@@ -35,7 +36,8 @@ export function PollView({
     myVote?.choice_id ?? null
   );
 
-  const closed = poll.status === "closed";
+  const { status: liveStatus, results } = usePollRealtime(poll, initialResults);
+  const closed = liveStatus === "closed";
   const isLocked = voted || closed;
   const showResults = isAdmin || closed;
 
@@ -189,6 +191,11 @@ export function PollView({
                             : isMine
                               ? "SÉLECTIONNÉ"
                               : "TOUCHE POUR CHOISIR"}
+                      </div>
+                    )}
+                    {restricted && c.restriction_message && (
+                      <div className="pl-card-restriction">
+                        {c.restriction_message}
                       </div>
                     )}
                   </div>

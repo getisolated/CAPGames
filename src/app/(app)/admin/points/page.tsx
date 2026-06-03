@@ -1,13 +1,13 @@
 import { createClient } from "@/lib/supabase/server";
 import { PointsAdmin } from "./points-admin";
-import type { Team } from "@/lib/supabase/types";
+import type { LeaderboardRow } from "@/lib/supabase/types";
 
 export default async function AdminPointsPage() {
   const supabase = await createClient();
-  const { data: teams } = await supabase
-    .from("teams")
+  const { data: rows } = await supabase
+    .from("leaderboard")
     .select("*")
-    .order("score", { ascending: false });
+    .order("rank");
 
-  return <PointsAdmin teams={(teams ?? []) as Team[]} />;
+  return <PointsAdmin initial={(rows ?? []) as LeaderboardRow[]} />;
 }

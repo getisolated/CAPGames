@@ -1,5 +1,6 @@
 import { requireAdmin } from "@/lib/auth";
 import { AdminTabs } from "./admin-tabs";
+import { AdminBack } from "./admin-back";
 
 const tabs = [
   { href: "/admin", label: "Cockpit" },
@@ -20,6 +21,7 @@ export default async function AdminLayout({
 
   return (
     <div className="screen admin-screen">
+      <AdminBack />
       <div className="ad-head">
         <div>
           <div

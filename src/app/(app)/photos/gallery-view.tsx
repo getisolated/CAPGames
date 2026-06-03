@@ -7,18 +7,18 @@ import { toast } from "sonner";
 import { Icon } from "@/components/cap/icons";
 import { PhotoLightbox } from "@/components/cap/photo-lightbox";
 import { createClient } from "@/lib/supabase/client";
+import { usePhotosRealtime, type PhotoWithUrl } from "@/hooks/use-photos-realtime";
 import { registerUploadedPhoto } from "./actions";
-import type { Photo, PhotoAlbum } from "@/lib/supabase/types";
-
-type PhotoWithUrl = Photo & { url: string | null };
+import type { PhotoAlbum } from "@/lib/supabase/types";
 
 export function GalleryView({
   albums,
-  photos,
+  photos: initialPhotos,
 }: {
   albums: PhotoAlbum[];
   photos: PhotoWithUrl[];
 }) {
+  const photos = usePhotosRealtime(initialPhotos);
   const [albumFilter, setAlbumFilter] = useState<string | null>(null);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [isPending, startTransition] = useTransition();

@@ -22,3 +22,23 @@ export async function adjustScore(formData: FormData) {
   revalidatePath("/classement");
   return { ok: true as const };
 }
+
+export async function setScore(formData: FormData) {
+  await requireAdmin();
+  const teamId = String(formData.get("team_id") ?? "");
+  const score = Number(formData.get("score") ?? NaN);
+  if (!teamId || !Number.isFinite(score)) {
+    return { ok: false as const, error: "Données invalides." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_team_score", {
+    p_team_id: teamId,
+    p_score: Math.max(0, Math.round(score)),
+  });
+  if (error) return { ok: false as const, error: error.message };
+
+  revalidatePath("/admin/points");
+  revalidatePath("/classement");
+  return { ok: true as const };
+}

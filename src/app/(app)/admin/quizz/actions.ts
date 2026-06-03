@@ -108,23 +108,76 @@ export async function endRound(formData: FormData) {
 // ============================================================
 // Mode "questions"
 // ============================================================
+async function uploadQuizMedia(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  prefix: string,
+  image: File
+): Promise<{ path: string } | { error: string }> {
+  const ext = image.name.split(".").pop()?.toLowerCase() ?? "png";
+  const path = `${prefix}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
+  const { error } = await supabase.storage
+    .from("quiz-media")
+    .upload(path, image, { contentType: image.type });
+  if (error) return { error: error.message };
+  return { path };
+}
+
 export async function createQuestion(formData: FormData) {
   await requireAdmin();
   const roomId = String(formData.get("room_id") ?? "");
   const text = String(formData.get("text") ?? "").trim();
+  const revealMessage =
+    String(formData.get("reveal_message") ?? "").trim() || null;
   const position = Number(formData.get("position") ?? 0);
+  const image = formData.get("image");
   if (!roomId || !text) {
     return { ok: false as const, error: "Room et texte requis." };
   }
+
   const supabase = await createClient();
+
+  let imagePath: string | null = null;
+  if (image instanceof File && image.size > 0) {
+    const res = await uploadQuizMedia(supabase, `q/${roomId}`, image);
+    if ("error" in res) return { ok: false as const, error: res.error };
+    imagePath = res.path;
+  }
+
   const { data, error } = await supabase
     .from("quiz_questions")
-    .insert({ room_id: roomId, text, position })
+    .insert({
+      room_id: roomId,
+      text,
+      position,
+      image_path: imagePath,
+      reveal_message: revealMessage,
+    })
     .select("id")
     .single();
   if (error) return { ok: false as const, error: error.message };
   revalidatePath(`/admin/quizz/${roomId}`);
   return { ok: true as const, id: data.id };
+}
+
+export async function updateQuestionReveal(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  const revealMessage =
+    String(formData.get("reveal_message") ?? "").trim() || null;
+  if (!id) return { ok: false as const, error: "ID requis." };
+  const supabase = await createClient();
+  const { data: q } = await supabase
+    .from("quiz_questions")
+    .select("room_id")
+    .eq("id", id)
+    .maybeSingle();
+  const { error } = await supabase
+    .from("quiz_questions")
+    .update({ reveal_message: revealMessage })
+    .eq("id", id);
+  if (error) return { ok: false as const, error: error.message };
+  if (q?.room_id) revalidatePath(`/admin/quizz/${q.room_id}`);
+  return { ok: true as const };
 }
 
 export async function deleteQuestion(formData: FormData) {
@@ -149,6 +202,7 @@ export async function createOption(formData: FormData) {
   const label = String(formData.get("label") ?? "").trim();
   const isCorrect = String(formData.get("is_correct") ?? "") === "true";
   const position = Number(formData.get("position") ?? 0);
+  const image = formData.get("image");
   if (!questionId || !label) {
     return { ok: false as const, error: "Question et libellé requis." };
   }
@@ -158,9 +212,21 @@ export async function createOption(formData: FormData) {
     .select("room_id")
     .eq("id", questionId)
     .maybeSingle();
-  const { error } = await supabase
-    .from("quiz_options")
-    .insert({ question_id: questionId, label, is_correct: isCorrect, position });
+
+  let imagePath: string | null = null;
+  if (image instanceof File && image.size > 0) {
+    const res = await uploadQuizMedia(supabase, `o/${questionId}`, image);
+    if ("error" in res) return { ok: false as const, error: res.error };
+    imagePath = res.path;
+  }
+
+  const { error } = await supabase.from("quiz_options").insert({
+    question_id: questionId,
+    label,
+    is_correct: isCorrect,
+    image_path: imagePath,
+    position,
+  });
   if (error) return { ok: false as const, error: error.message };
   if (q?.room_id) revalidatePath(`/admin/quizz/${q.room_id}`);
   return { ok: true as const };
@@ -212,6 +278,19 @@ export async function startQuestionRound(formData: FormData) {
   const { error } = await supabase.rpc("start_question_round", {
     p_room_id: roomId,
     p_question_id: questionId,
+  });
+  if (error) return { ok: false as const, error: error.message };
+  revalidatePath(`/admin/quizz/${roomId}`);
+  return { ok: true as const };
+}
+
+export async function revealQuestionRound(formData: FormData) {
+  await requireAdmin();
+  const roomId = String(formData.get("room_id") ?? "");
+  if (!roomId) return { ok: false as const, error: "Room requis." };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("reveal_question_round", {
+    p_room_id: roomId,
   });
   if (error) return { ok: false as const, error: error.message };
   revalidatePath(`/admin/quizz/${roomId}`);

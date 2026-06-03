@@ -25,7 +25,11 @@ export function QuestionRoom({
   const [isPending, startTransition] = useTransition();
   const [selected, setSelected] = useState<string | null>(null);
   const closed = round !== null && !round.is_active;
-  const showResults = closed; // user voit les résultats seulement quand admin a clôturé
+  const revealed = round?.revealed ?? false;
+  // Résultats visibles quand l'admin a révélé OU clôturé la manche
+  const showResults = closed || revealed;
+  // Le vote est bloqué dès la révélation
+  const voteLocked = Boolean(myOptionId) || closed || revealed;
 
   // Reset la sélection à chaque nouvelle manche
   useEffect(() => {
@@ -34,7 +38,7 @@ export function QuestionRoom({
   }, [round?.id]);
 
   function validate() {
-    if (!selected || myOptionId || !round) return;
+    if (!selected || voteLocked || !round) return;
     startTransition(async () => {
       const supabase = createClient();
       const { error } = await supabase.rpc("cast_answer", {
@@ -50,13 +54,15 @@ export function QuestionRoom({
   }
 
   const totalVotes = counts.reduce((s, c) => s + c.n_votes, 0);
-  const phase: "waiting" | "live" | "voted" | "closed" = !round
+  const phase: "waiting" | "live" | "voted" | "revealed" | "closed" = !round
     ? "waiting"
     : !round.is_active
       ? "closed"
-      : myOptionId
-        ? "voted"
-        : "live";
+      : revealed
+        ? "revealed"
+        : myOptionId
+          ? "voted"
+          : "live";
 
   return (
     <div className="screen buzzer-screen" data-phase={phase}>
@@ -101,6 +107,7 @@ export function QuestionRoom({
           {phase === "waiting" && <span className="chip">EN ATTENTE</span>}
           {phase === "live" && <span className="chip live">VOTE</span>}
           {phase === "voted" && <span className="chip gold">VOTÉ</span>}
+          {phase === "revealed" && <span className="chip gold">RÉPONSES</span>}
           {phase === "closed" && <span className="chip gold">RÉSULTATS</span>}
         </div>
       </div>
@@ -137,21 +144,35 @@ export function QuestionRoom({
                 lineHeight: 1.3,
                 fontWeight: 700,
                 marginTop: 6,
-                marginBottom: 18,
+                marginBottom: question.image_path ? 12 : 18,
               }}
             >
               {question.text}
             </h2>
 
+            {question.image_path && (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={question.image_path}
+                alt=""
+                style={{
+                  width: "100%",
+                  maxHeight: 240,
+                  objectFit: "cover",
+                  borderRadius: 14,
+                  marginBottom: 18,
+                }}
+              />
+            )}
+
             <div className="pl-cards">
               {options.map((o) => {
                 const isMine = myOptionId === o.id;
-                const isSelected = !myOptionId && selected === o.id;
+                const isSelected = !voteLocked && selected === o.id;
                 const highlight = isMine || isSelected;
                 const c = counts.find((x) => x.option_id === o.id);
                 const n = c?.n_votes ?? 0;
                 const pct = totalVotes > 0 ? Math.round((n / totalVotes) * 100) : 0;
-                const disabled = Boolean(myOptionId) || closed || isPending;
                 return (
                   <button
                     key={o.id}
@@ -159,28 +180,53 @@ export function QuestionRoom({
                     className={
                       "pl-card" +
                       (highlight ? " voted" : "") +
-                      ((myOptionId || selected) && !highlight ? " dimmed" : "") +
-                      (closed ? " closed" : "")
+                      (showResults && o.is_correct ? " voted" : "") +
+                      ((myOptionId || selected) && !highlight && !showResults
+                        ? " dimmed"
+                        : "") +
+                      (closed || revealed ? " closed" : "")
                     }
-                    disabled={disabled}
+                    disabled={voteLocked || isPending}
                     onClick={() => {
-                      if (myOptionId || closed) return;
+                      if (voteLocked) return;
                       setSelected((s) => (s === o.id ? null : o.id));
                     }}
                   >
-                    <div
-                      className="pl-card-img pl-card-img--mini"
-                      style={{
-                        background:
-                          "linear-gradient(150deg, oklch(40% 0.1 30), oklch(15% 0.04 30))",
-                      }}
-                    >
-                      <span className="pl-card-emoji">
-                        {(o.label || "?").slice(0, 1).toUpperCase()}
-                      </span>
-                    </div>
+                    {o.image_path ? (
+                      <div
+                        className="pl-card-img"
+                        style={{
+                          backgroundImage: `url(${o.image_path})`,
+                          backgroundSize: "cover",
+                          backgroundPosition: "center",
+                          minHeight: 90,
+                        }}
+                      />
+                    ) : (
+                      <div
+                        className="pl-card-img pl-card-img--mini"
+                        style={{
+                          background:
+                            "linear-gradient(150deg, oklch(40% 0.1 30), oklch(15% 0.04 30))",
+                        }}
+                      >
+                        <span className="pl-card-emoji">
+                          {(o.label || "?").slice(0, 1).toUpperCase()}
+                        </span>
+                      </div>
+                    )}
                     <div className="pl-card-body">
-                      <div className="pl-card-name">{o.label}</div>
+                      <div className="pl-card-name">
+                        {o.label}
+                        {showResults && o.is_correct && (
+                          <span
+                            className="chip gold"
+                            style={{ marginLeft: 8, fontSize: 9 }}
+                          >
+                            ✓ BONNE
+                          </span>
+                        )}
+                      </div>
                       {showResults ? (
                         <div className="pl-card-bar">
                           <div
@@ -194,7 +240,6 @@ export function QuestionRoom({
                           />
                           <div className="pl-card-bar-pct">
                             {pct}% · {n}
-                            {o.is_correct && " ✓"}
                           </div>
                         </div>
                       ) : (
@@ -209,7 +254,7 @@ export function QuestionRoom({
                         </div>
                       )}
                     </div>
-                    {highlight && (
+                    {highlight && !showResults && (
                       <div className="pl-card-checkmark">
                         <Icon.Check />
                       </div>
@@ -219,7 +264,7 @@ export function QuestionRoom({
               })}
             </div>
 
-            {!closed && (
+            {!closed && !revealed && (
               <div className="pl-validate">
                 {myOptionId ? (
                   <div className="pl-validated">
@@ -249,13 +294,15 @@ export function QuestionRoom({
               </div>
             )}
 
-            {closed && (
+            {(closed || revealed) && (
               <div className="pl-validated" style={{ marginTop: 16 }}>
                 <span className="pl-validated-check">
                   <Icon.Check />
                 </span>
                 <div>
-                  <div className="pl-validated-eyebrow">MANCHE TERMINÉE</div>
+                  <div className="pl-validated-eyebrow">
+                    {closed ? "MANCHE TERMINÉE" : "RÉPONSES RÉVÉLÉES"}
+                  </div>
                   <div className="pl-validated-name">
                     {myOptionId
                       ? options.find((o) => o.id === myOptionId)?.is_correct
@@ -263,6 +310,29 @@ export function QuestionRoom({
                         : "Mauvaise réponse"
                       : "Tu n'as pas répondu."}
                   </div>
+                </div>
+              </div>
+            )}
+
+            {showResults && question.reveal_message && (
+              <div
+                style={{
+                  marginTop: 14,
+                  padding: "14px 16px",
+                  background:
+                    "radial-gradient(circle at 0% 0%, oklch(70% 0.14 57 / 0.12), transparent 70%), oklch(100% 0 0 / 0.03)",
+                  border: "1px solid oklch(70% 0.14 57 / 0.3)",
+                  borderRadius: 16,
+                }}
+              >
+                <div
+                  className="t-eyebrow"
+                  style={{ color: "var(--tertiary-glow)", marginBottom: 6 }}
+                >
+                  LE MOT DE L&apos;ANIMATEUR
+                </div>
+                <div style={{ fontSize: 15, lineHeight: 1.4, color: "var(--text)" }}>
+                  {question.reveal_message}
                 </div>
               </div>
             )}

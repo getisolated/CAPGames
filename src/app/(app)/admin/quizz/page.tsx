@@ -33,7 +33,7 @@ export default async function AdminQuizListPage() {
           <input type="hidden" name="color" value="ember" />
           <input type="hidden" name="icon" value="buzzer" />
           <ModeRadio />
-          <Button type="submit" className="self-start">Créer</Button>
+          <Button type="submit" className="w-full">Créer</Button>
         </ActionForm>
         <p
           className="t-mono"

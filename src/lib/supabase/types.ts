@@ -52,6 +52,7 @@ export interface QuizQuestion {
   position: number;
   text: string;
   image_path: string | null;
+  reveal_message: string | null;
   created_at: string;
 }
 
@@ -60,6 +61,7 @@ export interface QuizOption {
   question_id: string;
   label: string;
   is_correct: boolean;
+  image_path: string | null;
   position: number;
 }
 
@@ -88,6 +90,7 @@ export interface Round {
   started_at: string;
   ended_at: string | null;
   question_id: string | null;
+  revealed: boolean;
 }
 
 export interface Buzz {

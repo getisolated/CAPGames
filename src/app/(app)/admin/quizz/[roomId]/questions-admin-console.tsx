@@ -16,6 +16,7 @@ import {
   deleteOption,
   deleteQuestion,
   endQuestionRound,
+  revealQuestionRound,
   startQuestionRound,
   toggleOptionCorrect,
 } from "../actions";
@@ -62,6 +63,15 @@ export function QuestionsAdminConsole({
     [allRounds]
   );
 
+  // Questions déjà jouées = celles avec au moins une manche terminée
+  const playedQuestionIds = useMemo(() => {
+    const s = new Set<string>();
+    for (const r of finishedRounds) {
+      if (r.question_id) s.add(r.question_id);
+    }
+    return s;
+  }, [finishedRounds]);
+
   const answersByRound = useMemo(() => {
     const m = new Map<string, AdminAnswer[]>();
     for (const a of allAnswers) {
@@ -72,7 +82,6 @@ export function QuestionsAdminConsole({
     return m;
   }, [allAnswers]);
 
-  // Pour résoudre option_id → option (label, is_correct)
   const optionsById = useMemo(() => {
     const m = new Map<string, QuizOption>();
     for (const list of Object.values(optionsByQuestion)) {
@@ -87,6 +96,8 @@ export function QuestionsAdminConsole({
     return m;
   }, [questions]);
 
+  const isRevealed = round?.revealed ?? false;
+
   function launch(questionId: string) {
     const fd = new FormData();
     fd.set("room_id", room.id);
@@ -95,6 +106,16 @@ export function QuestionsAdminConsole({
       const res = await startQuestionRound(fd);
       if (!res.ok) toast.error(res.error ?? "Erreur");
       else toast.success("Manche lancée.");
+    });
+  }
+
+  function reveal() {
+    const fd = new FormData();
+    fd.set("room_id", room.id);
+    startTransition(async () => {
+      const res = await revealQuestionRound(fd);
+      if (!res.ok) toast.error(res.error ?? "Erreur");
+      else toast.success("Réponses révélées à tous.");
     });
   }
 
@@ -131,8 +152,8 @@ export function QuestionsAdminConsole({
         {round && question ? (
           <>
             <div className="ad-phase-row">
-              <span className="ad-phase-pill live">
-                MANCHE {round.round_number} · LIVE
+              <span className={"ad-phase-pill " + (isRevealed ? "buzzed" : "live")}>
+                MANCHE {round.round_number} · {isRevealed ? "RÉVÉLÉE" : "VOTE OUVERT"}
               </span>
             </div>
             <div
@@ -153,6 +174,20 @@ export function QuestionsAdminConsole({
               <div style={{ fontSize: 18, fontWeight: 600, marginTop: 4 }}>
                 {question.text}
               </div>
+              {question.image_path && (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={question.image_path}
+                  alt=""
+                  style={{
+                    width: "100%",
+                    maxHeight: 200,
+                    objectFit: "cover",
+                    borderRadius: 12,
+                    marginTop: 10,
+                  }}
+                />
+              )}
               <div
                 style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 8 }}
               >
@@ -203,11 +238,36 @@ export function QuestionsAdminConsole({
                   );
                 })}
               </div>
+              {isRevealed && question.reveal_message && (
+                <div
+                  style={{
+                    marginTop: 12,
+                    padding: "10px 12px",
+                    background: "oklch(70% 0.14 57 / 0.1)",
+                    border: "1px solid oklch(70% 0.14 57 / 0.3)",
+                    borderRadius: 12,
+                    fontSize: 13,
+                    color: "var(--tertiary-glow)",
+                  }}
+                >
+                  {question.reveal_message}
+                </div>
+              )}
             </div>
             <div className="ad-phase-actions" style={{ marginTop: 12 }}>
+              {!isRevealed && (
+                <button
+                  type="button"
+                  className="btn btn-gold"
+                  onClick={reveal}
+                  disabled={isPending}
+                >
+                  <Icon.Sparkle /> Révéler les réponses à tous
+                </button>
+              )}
               <button
                 type="button"
-                className="btn btn-primary"
+                className={isRevealed ? "btn btn-primary" : "btn btn-ghost"}
                 onClick={endRound}
                 disabled={isPending}
               >
@@ -222,31 +282,19 @@ export function QuestionsAdminConsole({
                 AUCUNE MANCHE ACTIVE
               </span>
             </div>
-            {questions.length === 0 ? (
-              <p
-                className="t-mono"
-                style={{
-                  marginTop: 12,
-                  fontSize: 11,
-                  color: "var(--text-3)",
-                  letterSpacing: "0.1em",
-                }}
-              >
-                Ajoute des questions ci-dessous pour pouvoir lancer une manche.
-              </p>
-            ) : (
-              <p
-                className="t-mono"
-                style={{
-                  marginTop: 12,
-                  fontSize: 11,
-                  color: "var(--text-3)",
-                  letterSpacing: "0.1em",
-                }}
-              >
-                Choisis une question dans la liste ci-dessous et clique « Lancer ».
-              </p>
-            )}
+            <p
+              className="t-mono"
+              style={{
+                marginTop: 12,
+                fontSize: 11,
+                color: "var(--text-3)",
+                letterSpacing: "0.1em",
+              }}
+            >
+              {questions.length === 0
+                ? "Ajoute des questions ci-dessous pour pouvoir lancer une manche."
+                : "Choisis une question dans la liste ci-dessous et clique « Lancer »."}
+            </p>
           </>
         )}
         <span style={{ display: "none" }}>{myOptionId}</span>
@@ -262,6 +310,7 @@ export function QuestionsAdminConsole({
           {questions.map((q) => {
             const qOptions = optionsByQuestion[q.id] ?? [];
             const isActive = round?.question_id === q.id;
+            const alreadyPlayed = playedQuestionIds.has(q.id);
             return (
               <div key={q.id} className="card" style={{ padding: "14px 16px" }}>
                 <div
@@ -275,16 +324,28 @@ export function QuestionsAdminConsole({
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 14, fontWeight: 600 }}>{q.text}</div>
                     <div
-                      className="t-mono"
                       style={{
-                        fontSize: 10,
-                        color: "var(--text-3)",
-                        letterSpacing: "0.1em",
-                        marginTop: 2,
+                        display: "flex",
+                        gap: 6,
+                        marginTop: 4,
+                        flexWrap: "wrap",
+                        alignItems: "center",
                       }}
                     >
-                      {qOptions.length} OPTION{qOptions.length > 1 ? "S" : ""}
-                      {isActive && " · LIVE"}
+                      <span
+                        className="t-mono"
+                        style={{
+                          fontSize: 10,
+                          color: "var(--text-3)",
+                          letterSpacing: "0.1em",
+                        }}
+                      >
+                        {qOptions.length} OPTION{qOptions.length > 1 ? "S" : ""}
+                      </span>
+                      {isActive && <span className="chip live">LIVE</span>}
+                      {alreadyPlayed && !isActive && (
+                        <span className="chip gold">DÉJÀ JOUÉE</span>
+                      )}
                     </div>
                   </div>
                   {!round && (
@@ -295,7 +356,7 @@ export function QuestionsAdminConsole({
                       onClick={() => launch(q.id)}
                       disabled={isPending || qOptions.length === 0}
                     >
-                      Lancer <Icon.ArrowRight />
+                      {alreadyPlayed ? "Rejouer" : "Lancer"} <Icon.ArrowRight />
                     </button>
                   )}
                   <ActionForm action={deleteQuestion} successMsg="Question supprimée.">
@@ -309,6 +370,21 @@ export function QuestionsAdminConsole({
                     </button>
                   </ActionForm>
                 </div>
+
+                {q.image_path && (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src={q.image_path}
+                    alt=""
+                    style={{
+                      width: "100%",
+                      maxHeight: 160,
+                      objectFit: "cover",
+                      borderRadius: 10,
+                      marginBottom: 10,
+                    }}
+                  />
+                )}
 
                 <ul
                   style={{
@@ -338,6 +414,20 @@ export function QuestionsAdminConsole({
                         fontSize: 13,
                       }}
                     >
+                      {o.image_path && (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img
+                          src={o.image_path}
+                          alt=""
+                          style={{
+                            width: 32,
+                            height: 32,
+                            objectFit: "cover",
+                            borderRadius: 6,
+                            flexShrink: 0,
+                          }}
+                        />
+                      )}
                       <span style={{ flex: 1 }}>{o.label}</span>
                       <ActionForm action={toggleOptionCorrect} successMsg={null}>
                         <input type="hidden" name="id" value={o.id} />
@@ -385,25 +475,46 @@ export function QuestionsAdminConsole({
                   action={createOption}
                   successMsg="Option ajoutée."
                   resetOnSuccess
-                  style={{ marginTop: 8, display: "flex", gap: 6 }}
+                  style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}
                 >
                   <input type="hidden" name="question_id" value={q.id} />
                   <input type="hidden" name="position" value={qOptions.length} />
                   <input type="hidden" name="is_correct" value="false" />
-                  <input
-                    name="label"
-                    placeholder="Nouvelle option"
-                    required
-                    className="cg-input"
-                    style={{ flex: 1, height: 36 }}
-                  />
-                  <button
-                    type="submit"
-                    className="btn btn-ghost"
-                    style={{ height: 36, padding: "0 14px", fontSize: 12 }}
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <input
+                      name="label"
+                      placeholder="Nouvelle option"
+                      required
+                      className="cg-input"
+                      style={{ flex: 1, height: 36 }}
+                    />
+                    <button
+                      type="submit"
+                      className="btn btn-ghost"
+                      style={{ height: 36, padding: "0 14px", fontSize: 12 }}
+                    >
+                      <Icon.Plus />
+                    </button>
+                  </div>
+                  <label
+                    className="t-mono"
+                    style={{
+                      fontSize: 10,
+                      color: "var(--text-4)",
+                      letterSpacing: "0.1em",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                    }}
                   >
-                    <Icon.Plus />
-                  </button>
+                    IMAGE (OPTIONNEL)
+                    <input
+                      type="file"
+                      name="image"
+                      accept="image/*"
+                      style={{ fontSize: 11 }}
+                    />
+                  </label>
                 </ActionForm>
               </div>
             );
@@ -428,6 +539,21 @@ export function QuestionsAdminConsole({
             placeholder="Énoncé de la question"
             required
             className="cg-input"
+          />
+          <input
+            name="reveal_message"
+            placeholder="Message de révélation (optionnel) — affiché à la fin"
+            className="cg-input"
+          />
+          <label className="cg-label" style={{ marginTop: 2 }}>
+            Image de la question (optionnel)
+          </label>
+          <input
+            type="file"
+            name="image"
+            accept="image/*"
+            className="cg-input"
+            style={{ paddingTop: 9 }}
           />
           <button type="submit" className="btn btn-primary">
             Ajouter la question <Icon.ArrowRight />
@@ -466,11 +592,7 @@ export function QuestionsAdminConsole({
                 return o?.is_correct;
               }).length;
               return (
-                <div
-                  key={r.id}
-                  className="card"
-                  style={{ padding: "12px 14px" }}
-                >
+                <div key={r.id} className="card" style={{ padding: "12px 14px" }}>
                   <div
                     style={{
                       display: "flex",
@@ -550,7 +672,7 @@ export function QuestionsAdminConsole({
                               key={a.user_id}
                               style={{
                                 display: "grid",
-                                gridTemplateColumns: "1fr auto auto",
+                                gridTemplateColumns: "1fr auto",
                                 gap: 8,
                                 alignItems: "center",
                                 padding: "6px 10px",

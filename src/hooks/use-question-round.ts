@@ -82,10 +82,25 @@ export function useQuestionRound(roomId: string, userId: string) {
         .maybeSingle(),
     ]);
 
+    // Résout les chemins storage → URLs publiques (bucket quiz-media)
+    const toPublicUrl = (path: string | null) =>
+      path
+        ? supabase.storage.from("quiz-media").getPublicUrl(path).data.publicUrl
+        : null;
+
+    const q = question as QuizQuestion | null;
+    const questionResolved = q
+      ? { ...q, image_path: toPublicUrl(q.image_path) }
+      : null;
+    const optionsResolved = ((options ?? []) as QuizOption[]).map((o) => ({
+      ...o,
+      image_path: toPublicUrl(o.image_path),
+    }));
+
     setState({
       round: round as Round,
-      question: (question as QuizQuestion | null) ?? null,
-      options: (options ?? []) as QuizOption[],
+      question: questionResolved,
+      options: optionsResolved,
       counts: (counts ?? []) as QuizAnswerCount[],
       myOptionId: (myAnswer?.option_id as string | null) ?? null,
     });
