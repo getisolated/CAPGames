@@ -209,7 +209,7 @@ export function QuestionsAdminConsole({
                           {o.label}
                           {o.is_correct && (
                             <span
-                              className="chip gold"
+                              className="chip green"
                               style={{ marginLeft: 8, fontSize: 9 }}
                             >
                               ✓ BONNE
@@ -229,7 +229,7 @@ export function QuestionsAdminConsole({
                           style={{
                             width: pct + "%",
                             background: o.is_correct
-                              ? "var(--tertiary)"
+                              ? "var(--success)"
                               : "var(--primary)",
                           }}
                         />
@@ -405,10 +405,10 @@ export function QuestionsAdminConsole({
                         gap: 8,
                         padding: "6px 10px",
                         background: o.is_correct
-                          ? "oklch(70% 0.14 57 / 0.1)"
+                          ? "oklch(70% 0.16 145 / 0.1)"
                           : "oklch(100% 0 0 / 0.03)",
                         border: o.is_correct
-                          ? "1px solid oklch(70% 0.14 57 / 0.3)"
+                          ? "1px solid oklch(70% 0.16 145 / 0.35)"
                           : "1px solid oklch(100% 0 0 / 0.05)",
                         borderRadius: 8,
                         fontSize: 13,
@@ -442,10 +442,10 @@ export function QuestionsAdminConsole({
                           style={{
                             cursor: "pointer",
                             background: o.is_correct
-                              ? "var(--tertiary)"
+                              ? "var(--success)"
                               : "oklch(100% 0 0 / 0.05)",
                             color: o.is_correct
-                              ? "oklch(15% 0.04 35)"
+                              ? "oklch(15% 0.04 145)"
                               : "var(--text-3)",
                             border: 0,
                           }}

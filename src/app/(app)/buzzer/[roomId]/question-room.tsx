@@ -180,7 +180,7 @@ export function QuestionRoom({
                     className={
                       "pl-card" +
                       (highlight ? " voted" : "") +
-                      (showResults && o.is_correct ? " voted" : "") +
+                      (showResults && o.is_correct ? " correct" : "") +
                       ((myOptionId || selected) && !highlight && !showResults
                         ? " dimmed"
                         : "") +
@@ -220,7 +220,7 @@ export function QuestionRoom({
                         {o.label}
                         {showResults && o.is_correct && (
                           <span
-                            className="chip gold"
+                            className="chip green"
                             style={{ marginLeft: 8, fontSize: 9 }}
                           >
                             ✓ BONNE
@@ -234,7 +234,7 @@ export function QuestionRoom({
                             style={{
                               width: pct + "%",
                               background: o.is_correct
-                                ? "var(--tertiary)"
+                                ? "var(--success)"
                                 : "var(--primary)",
                             }}
                           />
