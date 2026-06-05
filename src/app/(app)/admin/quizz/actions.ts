@@ -459,6 +459,52 @@ export async function endQuestionRound(formData: FormData) {
   return { ok: true as const };
 }
 
+export async function updateQuestionText(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  const text = String(formData.get("text") ?? "").trim();
+  if (!id) return { ok: false as const, error: "ID requis." };
+  if (!text) return { ok: false as const, error: "Énoncé requis." };
+  const supabase = await createClient();
+  const { data: q } = await supabase
+    .from("quiz_questions")
+    .select("room_id")
+    .eq("id", id)
+    .maybeSingle();
+  if (!q) return { ok: false as const, error: "Question introuvable." };
+  if (await questionIsLive(supabase, id)) {
+    return { ok: false as const, error: QUESTION_LIVE_ERROR };
+  }
+  const { error } = await supabase
+    .from("quiz_questions")
+    .update({ text })
+    .eq("id", id);
+  if (error) return { ok: false as const, error: error.message };
+  revalidatePath(`/admin/quizz/${q.room_id}`);
+  return { ok: true as const };
+}
+
+export async function updateOptionLabel(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  const label = String(formData.get("label") ?? "").trim();
+  if (!id) return { ok: false as const, error: "ID requis." };
+  if (!label) return { ok: false as const, error: "Libellé requis." };
+  const supabase = await createClient();
+  const ctx = await optionContext(supabase, id);
+  if (!ctx) return { ok: false as const, error: "Option introuvable." };
+  if (await questionIsLive(supabase, ctx.questionId)) {
+    return { ok: false as const, error: QUESTION_LIVE_ERROR };
+  }
+  const { error } = await supabase
+    .from("quiz_options")
+    .update({ label })
+    .eq("id", id);
+  if (error) return { ok: false as const, error: error.message };
+  if (ctx.roomId) revalidatePath(`/admin/quizz/${ctx.roomId}`);
+  return { ok: true as const };
+}
+
 export async function clearRoomHistory(formData: FormData) {
   await requireAdmin();
   const roomId = String(formData.get("room_id") ?? "");

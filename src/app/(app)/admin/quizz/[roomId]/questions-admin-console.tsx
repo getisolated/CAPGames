@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Icon } from "@/components/cap/icons";
 import { ActionForm } from "@/components/cap/action-form";
@@ -23,7 +23,9 @@ import {
   startQuestionRound,
   toggleOptionCorrect,
   updateOptionImage,
+  updateOptionLabel,
   updateQuestionImage,
+  updateQuestionText,
 } from "../actions";
 import type {
   QuizOption,
@@ -330,7 +332,19 @@ export function QuestionsAdminConsole({
                   }}
                 >
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600 }}>{q.text}</div>
+                    <InlineEdit
+                      value={q.text}
+                      editable={editable}
+                      onSave={(text) => {
+                        const fd = new FormData();
+                        fd.set("id", q.id);
+                        fd.set("text", text);
+                        return updateQuestionText(fd);
+                      }}
+                      style={{ fontSize: 14, fontWeight: 600 }}
+                      placeholder="Énoncé de la question"
+                      ariaLabel="Modifier l'énoncé"
+                    />
                     <div
                       style={{
                         display: "flex",
@@ -410,7 +424,19 @@ export function QuestionsAdminConsole({
                       }}
                     >
                       <OptionPhoto option={o} editable={editable} />
-                      <span style={{ flex: 1 }}>{o.label}</span>
+                      <InlineEdit
+                        value={o.label}
+                        editable={editable}
+                        onSave={(label) => {
+                          const fd = new FormData();
+                          fd.set("id", o.id);
+                          fd.set("label", label);
+                          return updateOptionLabel(fd);
+                        }}
+                        style={{ flex: 1 }}
+                        placeholder="Libellé du choix"
+                        ariaLabel="Modifier le libellé"
+                      />
                       <ActionForm action={toggleOptionCorrect} successMsg={null}>
                         <input type="hidden" name="id" value={o.id} />
                         <input
@@ -674,6 +700,120 @@ export function QuestionsAdminConsole({
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Texte éditable au clic (énoncé de question, libellé de choix).
+ * Affiché en lecture seule si `editable` est faux (ex. question en cours).
+ * Entrée / perte de focus valide, Échap annule, champ vide refusé.
+ */
+function InlineEdit({
+  value,
+  editable,
+  onSave,
+  style,
+  placeholder,
+  ariaLabel,
+}: {
+  value: string;
+  editable: boolean;
+  onSave: (next: string) => Promise<{ ok: boolean; error?: string }>;
+  style?: React.CSSProperties;
+  placeholder?: string;
+  ariaLabel?: string;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  const [pending, startTransition] = useTransition();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const savingRef = useRef(false);
+
+  useEffect(() => {
+    if (editing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [editing]);
+
+  function begin() {
+    if (!editable) return;
+    setDraft(value);
+    setEditing(true);
+  }
+
+  function commit() {
+    if (savingRef.current) return;
+    const next = draft.trim();
+    if (!next) {
+      toast.error("Ce champ ne peut pas être vide.");
+      inputRef.current?.focus();
+      return;
+    }
+    if (next === value) {
+      setEditing(false);
+      return;
+    }
+    savingRef.current = true;
+    startTransition(async () => {
+      const res = await onSave(next);
+      savingRef.current = false;
+      if (!res.ok) {
+        toast.error(res.error ?? "Erreur");
+        inputRef.current?.focus();
+        return;
+      }
+      setEditing(false);
+    });
+  }
+
+  if (editing) {
+    return (
+      <input
+        ref={inputRef}
+        className="cg-inline-input"
+        style={style}
+        value={draft}
+        placeholder={placeholder}
+        disabled={pending}
+        aria-label={ariaLabel}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            commit();
+          } else if (e.key === "Escape") {
+            e.preventDefault();
+            setDraft(value);
+            setEditing(false);
+          }
+        }}
+      />
+    );
+  }
+
+  return (
+    <div
+      className={editable ? "cg-inline-edit" : undefined}
+      style={style}
+      role={editable ? "button" : undefined}
+      tabIndex={editable ? 0 : undefined}
+      title={editable ? "Cliquer pour modifier" : undefined}
+      onClick={begin}
+      onKeyDown={
+        editable
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                begin();
+              }
+            }
+          : undefined
+      }
+    >
+      {value}
     </div>
   );
 }
