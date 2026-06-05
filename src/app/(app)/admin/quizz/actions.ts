@@ -267,6 +267,157 @@ export async function deleteOption(formData: FormData) {
   return { ok: true as const };
 }
 
+// ============================================================
+// Édition des photos (question + options) après création.
+// Autorisée uniquement quand la question n'est pas affichée aux
+// participants (aucune manche active sur cette question).
+// ============================================================
+const QUESTION_LIVE_ERROR =
+  "Question affichée aux participants : édition impossible.";
+
+async function questionIsLive(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  questionId: string
+): Promise<boolean> {
+  const { data } = await supabase
+    .from("rounds")
+    .select("id")
+    .eq("question_id", questionId)
+    .eq("is_active", true)
+    .limit(1);
+  return (data?.length ?? 0) > 0;
+}
+
+async function optionContext(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  id: string
+) {
+  const { data: opt } = await supabase
+    .from("quiz_options")
+    .select("question_id, image_path, quiz_questions!inner(room_id)")
+    .eq("id", id)
+    .maybeSingle();
+  if (!opt) return null;
+  const room = opt.quiz_questions as unknown as
+    | { room_id: string }
+    | { room_id: string }[]
+    | null;
+  const roomId = Array.isArray(room) ? room[0]?.room_id : room?.room_id;
+  return {
+    questionId: opt.question_id as string,
+    imagePath: (opt.image_path as string | null) ?? null,
+    roomId: roomId ?? null,
+  };
+}
+
+export async function updateQuestionImage(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  const image = formData.get("image");
+  if (!id) return { ok: false as const, error: "ID requis." };
+  if (!(image instanceof File) || image.size === 0) {
+    return { ok: false as const, error: "Image requise." };
+  }
+  const supabase = await createClient();
+  const { data: q } = await supabase
+    .from("quiz_questions")
+    .select("room_id, image_path")
+    .eq("id", id)
+    .maybeSingle();
+  if (!q) return { ok: false as const, error: "Question introuvable." };
+  if (await questionIsLive(supabase, id)) {
+    return { ok: false as const, error: QUESTION_LIVE_ERROR };
+  }
+  const res = await uploadQuizMedia(supabase, `q/${q.room_id}`, image);
+  if ("error" in res) return { ok: false as const, error: res.error };
+  const { error } = await supabase
+    .from("quiz_questions")
+    .update({ image_path: res.path })
+    .eq("id", id);
+  if (error) return { ok: false as const, error: error.message };
+  if (q.image_path) {
+    await supabase.storage.from("quiz-media").remove([q.image_path]);
+  }
+  revalidatePath(`/admin/quizz/${q.room_id}`);
+  return { ok: true as const };
+}
+
+export async function removeQuestionImage(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  if (!id) return { ok: false as const, error: "ID requis." };
+  const supabase = await createClient();
+  const { data: q } = await supabase
+    .from("quiz_questions")
+    .select("room_id, image_path")
+    .eq("id", id)
+    .maybeSingle();
+  if (!q) return { ok: false as const, error: "Question introuvable." };
+  if (await questionIsLive(supabase, id)) {
+    return { ok: false as const, error: QUESTION_LIVE_ERROR };
+  }
+  const { error } = await supabase
+    .from("quiz_questions")
+    .update({ image_path: null })
+    .eq("id", id);
+  if (error) return { ok: false as const, error: error.message };
+  if (q.image_path) {
+    await supabase.storage.from("quiz-media").remove([q.image_path]);
+  }
+  revalidatePath(`/admin/quizz/${q.room_id}`);
+  return { ok: true as const };
+}
+
+export async function updateOptionImage(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  const image = formData.get("image");
+  if (!id) return { ok: false as const, error: "ID requis." };
+  if (!(image instanceof File) || image.size === 0) {
+    return { ok: false as const, error: "Image requise." };
+  }
+  const supabase = await createClient();
+  const ctx = await optionContext(supabase, id);
+  if (!ctx) return { ok: false as const, error: "Option introuvable." };
+  if (await questionIsLive(supabase, ctx.questionId)) {
+    return { ok: false as const, error: QUESTION_LIVE_ERROR };
+  }
+  const res = await uploadQuizMedia(supabase, `o/${ctx.questionId}`, image);
+  if ("error" in res) return { ok: false as const, error: res.error };
+  const { error } = await supabase
+    .from("quiz_options")
+    .update({ image_path: res.path })
+    .eq("id", id);
+  if (error) return { ok: false as const, error: error.message };
+  if (ctx.imagePath) {
+    await supabase.storage.from("quiz-media").remove([ctx.imagePath]);
+  }
+  if (ctx.roomId) revalidatePath(`/admin/quizz/${ctx.roomId}`);
+  return { ok: true as const };
+}
+
+export async function removeOptionImage(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  if (!id) return { ok: false as const, error: "ID requis." };
+  const supabase = await createClient();
+  const ctx = await optionContext(supabase, id);
+  if (!ctx) return { ok: false as const, error: "Option introuvable." };
+  if (await questionIsLive(supabase, ctx.questionId)) {
+    return { ok: false as const, error: QUESTION_LIVE_ERROR };
+  }
+  const { error } = await supabase
+    .from("quiz_options")
+    .update({ image_path: null })
+    .eq("id", id);
+  if (error) return { ok: false as const, error: error.message };
+  if (ctx.imagePath) {
+    await supabase.storage.from("quiz-media").remove([ctx.imagePath]);
+  }
+  if (ctx.roomId) revalidatePath(`/admin/quizz/${ctx.roomId}`);
+  return { ok: true as const };
+}
+
 export async function startQuestionRound(formData: FormData) {
   await requireAdmin();
   const roomId = String(formData.get("room_id") ?? "");

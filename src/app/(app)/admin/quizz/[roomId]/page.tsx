@@ -60,11 +60,23 @@ export default async function AdminRoomPage({
         .eq("round.room_id", roomId),
     ]);
 
+    // Résout les chemins storage → URLs publiques (bucket quiz-media)
+    const toPublicUrl = (path: string | null) =>
+      path
+        ? supabase.storage.from("quiz-media").getPublicUrl(path).data.publicUrl
+        : null;
+
+    const questionsResolved = ((questions ?? []) as QuizQuestion[]).map((q) => ({
+      ...q,
+      image_path: toPublicUrl(q.image_path),
+    }));
+
     const optionsByQuestion: Record<string, QuizOption[]> = {};
     for (const o of (options ?? []) as QuizOption[]) {
-      const arr = optionsByQuestion[o.question_id] ?? [];
-      arr.push(o);
-      optionsByQuestion[o.question_id] = arr;
+      const resolved = { ...o, image_path: toPublicUrl(o.image_path) };
+      const arr = optionsByQuestion[resolved.question_id] ?? [];
+      arr.push(resolved);
+      optionsByQuestion[resolved.question_id] = arr;
     }
 
     const initialAnswers: AdminAnswer[] = (answersData ?? []).map((a) => {
@@ -92,7 +104,7 @@ export default async function AdminRoomPage({
       <QuestionsAdminConsole
         room={typed}
         userId={user!.id}
-        questions={(questions ?? []) as QuizQuestion[]}
+        questions={questionsResolved}
         optionsByQuestion={optionsByQuestion}
         initialRounds={(roundsData ?? []) as Round[]}
         initialAnswers={initialAnswers}

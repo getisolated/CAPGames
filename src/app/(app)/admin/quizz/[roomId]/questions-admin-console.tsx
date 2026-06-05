@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Icon } from "@/components/cap/icons";
 import { ActionForm } from "@/components/cap/action-form";
@@ -16,9 +16,13 @@ import {
   deleteOption,
   deleteQuestion,
   endQuestionRound,
+  removeOptionImage,
+  removeQuestionImage,
   revealQuestionRound,
   startQuestionRound,
   toggleOptionCorrect,
+  updateOptionImage,
+  updateQuestionImage,
 } from "../actions";
 import type {
   QuizOption,
@@ -311,6 +315,9 @@ export function QuestionsAdminConsole({
             const qOptions = optionsByQuestion[q.id] ?? [];
             const isActive = round?.question_id === q.id;
             const alreadyPlayed = playedQuestionIds.has(q.id);
+            // Photos modifiables tant que la question n'est pas affichée
+            // (= pas la question de la manche active en cours).
+            const editable = !isActive;
             return (
               <div key={q.id} className="card" style={{ padding: "14px 16px" }}>
                 <div
@@ -371,20 +378,7 @@ export function QuestionsAdminConsole({
                   </ActionForm>
                 </div>
 
-                {q.image_path && (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img
-                    src={q.image_path}
-                    alt=""
-                    style={{
-                      width: "100%",
-                      maxHeight: 160,
-                      objectFit: "cover",
-                      borderRadius: 10,
-                      marginBottom: 10,
-                    }}
-                  />
-                )}
+                <QuestionImage question={q} editable={editable} />
 
                 <ul
                   style={{
@@ -414,20 +408,7 @@ export function QuestionsAdminConsole({
                         fontSize: 13,
                       }}
                     >
-                      {o.image_path && (
-                        /* eslint-disable-next-line @next/next/no-img-element */
-                        <img
-                          src={o.image_path}
-                          alt=""
-                          style={{
-                            width: 32,
-                            height: 32,
-                            objectFit: "cover",
-                            borderRadius: 6,
-                            flexShrink: 0,
-                          }}
-                        />
-                      )}
+                      <OptionPhoto option={o} editable={editable} />
                       <span style={{ flex: 1 }}>{o.label}</span>
                       <ActionForm action={toggleOptionCorrect} successMsg={null}>
                         <input type="hidden" name="id" value={o.id} />
@@ -471,51 +452,7 @@ export function QuestionsAdminConsole({
                   ))}
                 </ul>
 
-                <ActionForm
-                  action={createOption}
-                  successMsg="Option ajoutée."
-                  resetOnSuccess
-                  style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}
-                >
-                  <input type="hidden" name="question_id" value={q.id} />
-                  <input type="hidden" name="position" value={qOptions.length} />
-                  <input type="hidden" name="is_correct" value="false" />
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <input
-                      name="label"
-                      placeholder="Nouvelle option"
-                      required
-                      className="cg-input"
-                      style={{ flex: 1, height: 36 }}
-                    />
-                    <button
-                      type="submit"
-                      className="btn btn-ghost"
-                      style={{ height: 36, padding: "0 14px", fontSize: 12 }}
-                    >
-                      <Icon.Plus />
-                    </button>
-                  </div>
-                  <label
-                    className="t-mono"
-                    style={{
-                      fontSize: 10,
-                      color: "var(--text-4)",
-                      letterSpacing: "0.1em",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 6,
-                    }}
-                  >
-                    IMAGE (OPTIONNEL)
-                    <input
-                      type="file"
-                      name="image"
-                      accept="image/*"
-                      style={{ fontSize: 11 }}
-                    />
-                  </label>
-                </ActionForm>
+                <AddOptionForm questionId={q.id} position={qOptions.length} />
               </div>
             );
           })}
@@ -732,5 +669,321 @@ export function QuestionsAdminConsole({
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * Image d'une question avec édition (remplacer / retirer / ajouter).
+ * Les contrôles ne s'affichent que si `editable` (question pas en cours).
+ */
+function QuestionImage({
+  question,
+  editable,
+}: {
+  question: QuizQuestion;
+  editable: boolean;
+}) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [pending, startTransition] = useTransition();
+  const src = question.image_path;
+
+  function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const fd = new FormData();
+    fd.set("id", question.id);
+    fd.set("image", file);
+    startTransition(async () => {
+      const res = await updateQuestionImage(fd);
+      if (!res.ok) toast.error(res.error ?? "Erreur");
+      else toast.success(src ? "Photo remplacée." : "Photo ajoutée.");
+      if (fileRef.current) fileRef.current.value = "";
+    });
+  }
+
+  function remove() {
+    const fd = new FormData();
+    fd.set("id", question.id);
+    startTransition(async () => {
+      const res = await removeQuestionImage(fd);
+      if (!res.ok) toast.error(res.error ?? "Erreur");
+      else toast.success("Photo retirée.");
+    });
+  }
+
+  if (!src) {
+    if (!editable) return null;
+    return (
+      <div style={{ marginBottom: 10 }}>
+        <button
+          type="button"
+          className="btn btn-ghost"
+          style={{ height: 34, padding: "0 14px", fontSize: 12 }}
+          onClick={() => fileRef.current?.click()}
+          disabled={pending}
+        >
+          <Icon.Photos /> Ajouter une photo
+        </button>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          hidden
+          onChange={onFile}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ position: "relative", marginBottom: 10 }}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt=""
+        style={{
+          width: "100%",
+          maxHeight: 160,
+          objectFit: "cover",
+          borderRadius: 10,
+          display: "block",
+        }}
+      />
+      {editable && (
+        <div
+          style={{
+            position: "absolute",
+            top: 8,
+            right: 8,
+            display: "flex",
+            gap: 6,
+          }}
+        >
+          <button
+            type="button"
+            className="cg-img-edit"
+            onClick={() => fileRef.current?.click()}
+            disabled={pending}
+            aria-label="Remplacer la photo"
+          >
+            <Icon.Photos />
+          </button>
+          <button
+            type="button"
+            className="cg-img-edit bad"
+            onClick={remove}
+            disabled={pending}
+            aria-label="Retirer la photo"
+          >
+            <Icon.X />
+          </button>
+        </div>
+      )}
+      <input ref={fileRef} type="file" accept="image/*" hidden onChange={onFile} />
+    </div>
+  );
+}
+
+/**
+ * Vignette d'une option avec édition. Clic sur la vignette = remplacer,
+ * badge ✕ = retirer, bouton 📷 = ajouter si absente. Visible si `editable`.
+ */
+function OptionPhoto({
+  option,
+  editable,
+}: {
+  option: QuizOption;
+  editable: boolean;
+}) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [pending, startTransition] = useTransition();
+  const src = option.image_path;
+
+  function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const fd = new FormData();
+    fd.set("id", option.id);
+    fd.set("image", file);
+    startTransition(async () => {
+      const res = await updateOptionImage(fd);
+      if (!res.ok) toast.error(res.error ?? "Erreur");
+      else toast.success(src ? "Photo remplacée." : "Photo ajoutée.");
+      if (fileRef.current) fileRef.current.value = "";
+    });
+  }
+
+  function remove() {
+    const fd = new FormData();
+    fd.set("id", option.id);
+    startTransition(async () => {
+      const res = await removeOptionImage(fd);
+      if (!res.ok) toast.error(res.error ?? "Erreur");
+      else toast.success("Photo retirée.");
+    });
+  }
+
+  if (!src) {
+    if (!editable) return null;
+    return (
+      <>
+        <button
+          type="button"
+          className="cg-opt-add"
+          onClick={() => fileRef.current?.click()}
+          disabled={pending}
+          aria-label="Ajouter une photo"
+          title="Ajouter une photo"
+        >
+          <Icon.Photos />
+        </button>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          hidden
+          onChange={onFile}
+        />
+      </>
+    );
+  }
+
+  if (!editable) {
+    return (
+      /* eslint-disable-next-line @next/next/no-img-element */
+      <img className="cg-opt-thumb-static" src={src} alt="" />
+    );
+  }
+
+  return (
+    <div className="cg-opt-thumb">
+      <button
+        type="button"
+        className="cg-opt-thumb-img"
+        onClick={() => fileRef.current?.click()}
+        disabled={pending}
+        aria-label="Remplacer la photo"
+        title="Remplacer la photo"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={src} alt="" />
+      </button>
+      <button
+        type="button"
+        className="cg-opt-thumb-remove"
+        onClick={remove}
+        disabled={pending}
+        aria-label="Retirer la photo"
+        title="Retirer la photo"
+      >
+        <Icon.X />
+      </button>
+      <input ref={fileRef} type="file" accept="image/*" hidden onChange={onFile} />
+    </div>
+  );
+}
+
+/**
+ * Formulaire d'ajout d'une option avec bouton photo compact (taille du « + »)
+ * placé entre le champ texte et le bouton d'ajout.
+ */
+function AddOptionForm({
+  questionId,
+  position,
+}: {
+  questionId: string;
+  position: number;
+}) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    setPreview(file ? URL.createObjectURL(file) : null);
+  }
+
+  function clearPhoto() {
+    if (fileRef.current) fileRef.current.value = "";
+    setPreview(null);
+  }
+
+  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const fd = new FormData(form);
+    startTransition(async () => {
+      const res = await createOption(fd);
+      if (!res.ok) {
+        toast.error(res.error ?? "Erreur");
+        return;
+      }
+      toast.success("Option ajoutée.");
+      form.reset();
+      setPreview(null);
+    });
+  }
+
+  return (
+    <form onSubmit={onSubmit} style={{ marginTop: 8 }}>
+      <fieldset
+        disabled={pending}
+        style={{ border: 0, padding: 0, margin: 0, display: "contents" }}
+      >
+        <input type="hidden" name="question_id" value={questionId} />
+        <input type="hidden" name="position" value={position} />
+        <input type="hidden" name="is_correct" value="false" />
+        <div style={{ display: "flex", gap: 6 }}>
+          <input
+            name="label"
+            placeholder="Nouvelle option"
+            required
+            className="cg-input"
+            style={{ flex: 1, height: 36 }}
+          />
+          <div className="cg-photo-pick">
+            <button
+              type="button"
+              className={"cg-photo-btn" + (preview ? " has-img" : "")}
+              onClick={() => fileRef.current?.click()}
+              aria-label="Ajouter une photo à l'option"
+              title="Photo de l'option (optionnel)"
+            >
+              {preview ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img src={preview} alt="" />
+              ) : (
+                <Icon.Photos />
+              )}
+            </button>
+            {preview && (
+              <button
+                type="button"
+                className="cg-photo-clear"
+                onClick={clearPhoto}
+                aria-label="Retirer la photo sélectionnée"
+              >
+                <Icon.X />
+              </button>
+            )}
+          </div>
+          <input
+            ref={fileRef}
+            type="file"
+            name="image"
+            accept="image/*"
+            hidden
+            onChange={onFile}
+          />
+          <button
+            type="submit"
+            className="btn btn-ghost"
+            style={{ height: 36, padding: "0 14px", fontSize: 12 }}
+          >
+            <Icon.Plus />
+          </button>
+        </div>
+      </fieldset>
+    </form>
   );
 }

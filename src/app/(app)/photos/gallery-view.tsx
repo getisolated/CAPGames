@@ -178,7 +178,7 @@ export function GalleryView({
       </div>
 
       <div className="scroll-area">
-        <div className="g-banner">
+        {/* <div className="g-banner">
           <div className="g-banner-inner">
             <div>
               <div className="t-eyebrow" style={{ color: "var(--tertiary-glow)" }}>
@@ -198,7 +198,7 @@ export function GalleryView({
               <div className="orb-core" />
             </div>
           </div>
-        </div>
+        </div> */}
 
         {filtered.length === 0 ? (
           <div className="px-6">
