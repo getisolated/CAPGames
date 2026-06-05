@@ -99,6 +99,14 @@ export const Icon = {
       <path d="M18 6L6 18" />
     </svg>
   ),
+  Expand: () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 9V4h5" />
+      <path d="M20 9V4h-5" />
+      <path d="M4 15v5h5" />
+      <path d="M20 15v5h-5" />
+    </svg>
+  ),
   Sparkle: () => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
       <path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M6 18l2.5-2.5M15.5 8.5L18 6" />

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useRealtimeRefresh } from "@/hooks/use-realtime-refresh";
 import type { Poll, PollResult, PollStatus } from "@/lib/supabase/types";
 
 type PollLiveState = {
@@ -58,11 +59,15 @@ export function usePollRealtime(
         },
         () => refresh()
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") refresh();
+      });
     return () => {
       supabase.removeChannel(channel);
     };
   }, [supabase, poll.id, refresh]);
+
+  useRealtimeRefresh(refresh, 2500);
 
   return state;
 }

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useRealtimeRefresh } from "@/hooks/use-realtime-refresh";
 import type { BuzzOrdered, Round } from "@/lib/supabase/types";
 
 type State = {
@@ -47,7 +48,14 @@ export function useBuzzerRealtime(roomId: string) {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "rounds", filter: `room_id=eq.${roomId}` },
-        () => refresh()
+        (payload) => {
+          // Déverrouillage immédiat depuis l'événement, sans attendre le SELECT
+          const r = payload.new as Round | null;
+          if (r && r.is_active) {
+            setState((s) => ({ ...s, activeRound: r }));
+          }
+          refresh();
+        }
       )
       .on(
         "postgres_changes",
@@ -59,12 +67,17 @@ export function useBuzzerRealtime(roomId: string) {
         { event: "DELETE", schema: "public", table: "buzzes" },
         () => refresh()
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") refresh();
+      });
 
     return () => {
       supabase.removeChannel(channel);
     };
   }, [supabase, roomId, refresh]);
+
+  // Filet de secours : déverrouille même si l'événement Realtime est manqué.
+  useRealtimeRefresh(refresh, 2000);
 
   return state;
 }

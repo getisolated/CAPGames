@@ -135,16 +135,19 @@ export function GalleryView({
           </h1>
         </div>
         <div className="g-head-actions">
-          <span className="chip">{photos.length} PHOTOS</span>
-          <button
-            type="button"
-            className="g-icon-btn"
-            onClick={() => fileRef.current?.click()}
-            aria-label="Envoyer"
-            disabled={isPending}
-          >
-            <Icon.Upload />
-          </button>
+          <div className="g-upload">
+            <span className="g-upload-text">
+              Ajoute tes photos de la soirée pour l&apos;album du week-end&nbsp;!
+            </span>
+            <button
+              type="button"
+              className="btn btn-gold g-upload-btn"
+              onClick={() => fileRef.current?.click()}
+              disabled={isPending}
+            >
+              <Icon.Upload /> {isPending ? "Envoi…" : "Ajouter"}
+            </button>
+          </div>
           <input
             ref={fileRef}
             type="file"

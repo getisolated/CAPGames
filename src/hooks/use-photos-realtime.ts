@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useRealtimeRefresh } from "@/hooks/use-realtime-refresh";
 import type { Photo } from "@/lib/supabase/types";
 
 export type PhotoWithUrl = Photo & { url: string | null };
@@ -42,11 +43,17 @@ export function usePhotosRealtime(initial: PhotoWithUrl[]) {
         { event: "*", schema: "public", table: "photos" },
         () => refresh()
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") refresh();
+      });
     return () => {
       supabase.removeChannel(channel);
     };
   }, [supabase, refresh]);
+
+  // Rattrapage au réveil/reconnexion seulement (le refresh re-signe toutes les
+  // URLs → pas de polling périodique ici).
+  useRealtimeRefresh(refresh, 0);
 
   return photos;
 }

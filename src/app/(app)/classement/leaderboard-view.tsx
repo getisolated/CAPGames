@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLeaderboard } from "@/hooks/use-leaderboard";
 import { NoTeamCard } from "@/components/cap/no-team-card";
+import { Icon } from "@/components/cap/icons";
+import { ScoresFullscreen } from "@/components/cap/scores-fullscreen";
 import { teamColor, teamShort, teamShortName } from "@/lib/team-style";
 import type { LeaderboardRow } from "@/lib/supabase/types";
 
@@ -28,12 +30,15 @@ function gapLabel(teams: LeaderboardRow[], index: number): string {
 export function LeaderboardView({
   initial,
   myTeamId,
+  isAdmin,
 }: {
   initial: LeaderboardRow[];
   myTeamId: string | null;
   isAdmin: boolean;
 }) {
   const teams = useLeaderboard(initial);
+  const [fullscreen, setFullscreen] = useState(false);
+  const closeFullscreen = useCallback(() => setFullscreen(false), []);
 
   // Détection de changements pour les animations
   const prevScores = useRef<Map<string, number>>(
@@ -72,6 +77,13 @@ export function LeaderboardView({
 
   return (
     <div className="screen scores-screen">
+      {fullscreen && (
+        <ScoresFullscreen
+          teams={teams}
+          pulsing={pulsing}
+          onClose={closeFullscreen}
+        />
+      )}
       <div className="lb-head">
         <div>
           <div className="t-eyebrow">Classement général</div>
@@ -80,7 +92,20 @@ export function LeaderboardView({
             <span className="t-serif-it">d&apos;honneur.</span>
           </h1>
         </div>
-        <span className="chip live">En direct</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {isAdmin && (
+            <button
+              type="button"
+              className="cg-fs-btn"
+              onClick={() => setFullscreen(true)}
+              aria-label="Afficher les scores en plein écran"
+              title="Plein écran"
+            >
+              <Icon.Expand />
+            </button>
+          )}
+          <span className="chip live">En direct</span>
+        </div>
       </div>
 
       <div className="scroll-area">

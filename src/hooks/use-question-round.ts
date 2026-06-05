@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useRealtimeRefresh } from "@/hooks/use-realtime-refresh";
 import type {
   QuizAnswerCount,
   QuizOption,
@@ -126,11 +127,15 @@ export function useQuestionRound(roomId: string, userId: string) {
         { event: "*", schema: "public", table: "quiz_answers" },
         () => refresh()
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") refresh();
+      });
     return () => {
       supabase.removeChannel(channel);
     };
   }, [supabase, roomId, refresh]);
+
+  useRealtimeRefresh(refresh, 2000);
 
   return state;
 }

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useRealtimeRefresh } from "@/hooks/use-realtime-refresh";
 import type { BuzzOrdered, Round } from "@/lib/supabase/types";
 
 /**
@@ -62,12 +63,16 @@ export function useRoomHistory(
         { event: "*", schema: "public", table: "buzzes" },
         () => refresh()
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") refresh();
+      });
 
     return () => {
       supabase.removeChannel(channel);
     };
   }, [supabase, roomId, refresh]);
+
+  useRealtimeRefresh(refresh, 3000);
 
   return { rounds, buzzes };
 }

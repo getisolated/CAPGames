@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useRealtimeRefresh } from "@/hooks/use-realtime-refresh";
 import type { Round } from "@/lib/supabase/types";
 
 export type AdminAnswer = {
@@ -96,11 +97,15 @@ export function useQuestionsRoomHistory(
         { event: "*", schema: "public", table: "quiz_answers" },
         () => refresh()
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") refresh();
+      });
     return () => {
       supabase.removeChannel(channel);
     };
   }, [supabase, roomId, refresh]);
+
+  useRealtimeRefresh(refresh, 3000);
 
   return { rounds, answers };
 }

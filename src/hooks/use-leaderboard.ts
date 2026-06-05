@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useRealtimeRefresh } from "@/hooks/use-realtime-refresh";
 import type { LeaderboardRow } from "@/lib/supabase/types";
 
 export function useLeaderboard(initial: LeaderboardRow[]) {
@@ -24,12 +25,16 @@ export function useLeaderboard(initial: LeaderboardRow[]) {
         { event: "*", schema: "public", table: "teams" },
         () => refresh()
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") refresh();
+      });
 
     return () => {
       supabase.removeChannel(channel);
     };
   }, [supabase, refresh]);
+
+  useRealtimeRefresh(refresh, 4000);
 
   return rows;
 }
