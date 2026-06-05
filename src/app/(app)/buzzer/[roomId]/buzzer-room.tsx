@@ -69,6 +69,7 @@ export function BuzzerRoom({
       <div className="b-head">
         <div className="b-head-left" style={{ display: "flex", gap: 12 }}>
           <div
+            className="room-logo"
             style={{
               width: 44,
               height: 44,

@@ -94,9 +94,6 @@ export function PollView({
           <div className="pl-head">
             <div className="t-eyebrow">
               {closed ? "VOTE CLOS" : "VOTE OUVERT"}
-              {isAdmin && (
-                <span className="pl-admin-tag"> · VUE ADMIN</span>
-              )}
             </div>
             <h2 className="pl-title t-display">{poll.title}</h2>
             {poll.description && (

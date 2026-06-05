@@ -33,8 +33,12 @@ export const allowedEmailDomains = env.ALLOWED_EMAIL_DOMAINS.split(",")
   .map((d) => d.trim().toLowerCase())
   .filter(Boolean);
 
+/** `*` dans la liste → toutes les adresses (avec un domaine) sont acceptées. */
+const allowAllDomains = allowedEmailDomains.includes("*");
+
 export function isEmailDomainAllowed(email: string): boolean {
   const domain = email.split("@")[1]?.toLowerCase();
   if (!domain) return false;
+  if (allowAllDomains) return true;
   return allowedEmailDomains.includes(domain);
 }

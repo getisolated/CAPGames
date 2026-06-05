@@ -42,28 +42,51 @@ export function LoginForm({ bypassOtp }: { bypassOtp: boolean }) {
     });
   }
 
+  function submitCode(codeArr: string[]) {
+    if (!codeArr.every((c) => c) || isPending) return;
+    const fd = new FormData();
+    fd.set("email", email);
+    fd.set("token", codeArr.join(""));
+    startTransition(async () => {
+      const res = await verifyOtp(fd);
+      if (!res.ok) {
+        toast.error(res.error);
+        setCode(Array(OTP_LEN).fill(""));
+        inputsRef.current[0]?.focus();
+        return;
+      }
+      router.push(next);
+      router.refresh();
+    });
+  }
+
   function handleCodeChange(i: number, v: string) {
     if (!/^\d?$/.test(v)) return;
     const nextCode = [...code];
     nextCode[i] = v;
     setCode(nextCode);
     if (v && i < OTP_LEN - 1) inputsRef.current[i + 1]?.focus();
-    if (nextCode.every((c) => c) && !isPending) {
-      const fd = new FormData();
-      fd.set("email", email);
-      fd.set("token", nextCode.join(""));
-      startTransition(async () => {
-        const res = await verifyOtp(fd);
-        if (!res.ok) {
-          toast.error(res.error);
-          setCode(Array(OTP_LEN).fill(""));
-          inputsRef.current[0]?.focus();
-          return;
-        }
-        router.push(next);
-        router.refresh();
-      });
+    submitCode(nextCode);
+  }
+
+  function handleCodePaste(
+    e: React.ClipboardEvent<HTMLInputElement>,
+    startIndex: number
+  ) {
+    const digits = e.clipboardData.getData("text").replace(/\D/g, "");
+    if (!digits) return;
+    e.preventDefault();
+    const nextCode = [...code];
+    let idx = startIndex;
+    for (const ch of digits) {
+      if (idx >= OTP_LEN) break;
+      nextCode[idx] = ch;
+      idx += 1;
     }
+    setCode(nextCode);
+    const lastFilled = Math.min(idx, OTP_LEN) - 1;
+    inputsRef.current[Math.max(0, lastFilled)]?.focus();
+    submitCode(nextCode);
   }
 
   return (
@@ -144,6 +167,7 @@ export function LoginForm({ bypassOtp }: { bypassOtp: boolean }) {
                   }}
                   value={c}
                   onChange={(e) => handleCodeChange(i, e.target.value.slice(-1))}
+                  onPaste={(e) => handleCodePaste(e, i)}
                   onKeyDown={(e) => {
                     if (e.key === "Backspace" && !c && i > 0) {
                       inputsRef.current[i - 1]?.focus();

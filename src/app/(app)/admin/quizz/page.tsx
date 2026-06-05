@@ -2,13 +2,18 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Icon, RoomIcon } from "@/components/cap/icons";
+import { Icon } from "@/components/cap/icons";
 import { ActionForm } from "@/components/cap/action-form";
-import { roomColor } from "@/lib/room-style";
 import type { QuizRoom } from "@/lib/supabase/types";
 import { createRoom, deleteRoom, setRoomStatus } from "./actions";
-import { RoomStylePicker } from "./room-style-picker";
+import { RoomStyleModal } from "./room-style-modal";
 import { ModeRadio } from "./mode-radio";
+
+const STATUS_LABEL: Record<string, string> = {
+  draft: "Brouillon",
+  open: "Ouvert",
+  closed: "Fermé",
+};
 
 export default async function AdminQuizListPage() {
   const supabase = await createClient();
@@ -55,7 +60,6 @@ export default async function AdminQuizListPage() {
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {((rooms ?? []) as QuizRoom[]).map((room) => {
-            const color = roomColor(room.color);
             return (
               <div key={room.id} className="card" style={{ padding: "14px 16px" }}>
                 <div
@@ -64,42 +68,16 @@ export default async function AdminQuizListPage() {
                     alignItems: "center",
                     gap: 12,
                     flexWrap: "wrap",
-                    marginBottom: 12,
                   }}
                 >
-                  <div
-                    style={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: 12,
-                      display: "grid",
-                      placeItems: "center",
-                      background: color,
-                      color: "oklch(98% 0.01 60)",
-                      flexShrink: 0,
-                    }}
-                  >
-                    <RoomIcon iconKey={room.icon} />
-                  </div>
+                  <RoomStyleModal
+                    roomId={room.id}
+                    roomName={room.name}
+                    currentColor={room.color}
+                    currentIcon={room.icon}
+                  />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 700, fontSize: 15 }}>{room.name}</div>
-                    <div style={{ display: "flex", gap: 6, marginTop: 4, flexWrap: "wrap" }}>
-                      <span
-                        className={
-                          "chip " +
-                          (room.status === "open"
-                            ? "live"
-                            : room.status === "closed"
-                              ? "gold"
-                              : "")
-                        }
-                      >
-                        {room.status}
-                      </span>
-                      <span className="chip">
-                        {room.mode === "questions" ? "QUESTIONS" : "BUZZER"}
-                      </span>
-                    </div>
                   </div>
                   <Link href={`/admin/quizz/${room.id}`}>
                     <Button size="sm">Animer</Button>
@@ -125,12 +103,30 @@ export default async function AdminQuizListPage() {
                     </Button>
                   </ActionForm>
                 </div>
-                <RoomStylePicker
-                  roomId={room.id}
-                  currentColor={room.color}
-                  currentIcon={room.icon}
-                  compact
-                />
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 6,
+                    marginTop: 12,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <span
+                    className={
+                      "chip " +
+                      (room.status === "open"
+                        ? "live"
+                        : room.status === "closed"
+                          ? "gold"
+                          : "")
+                    }
+                  >
+                    {STATUS_LABEL[room.status] ?? room.status}
+                  </span>
+                  <span className="chip">
+                    {room.mode === "questions" ? "Questions" : "Buzzer"}
+                  </span>
+                </div>
               </div>
             );
           })}

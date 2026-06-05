@@ -46,7 +46,7 @@ export default async function BuzzerListPage() {
                     style={{ gridTemplateColumns: "auto 1fr auto", padding: "16px 18px", gap: 14 }}
                   >
                     <div
-                      className="g-icon-btn"
+                      className="g-icon-btn room-logo"
                       style={{
                         width: 48,
                         height: 48,

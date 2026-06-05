@@ -1459,6 +1459,12 @@ h3 .t-serif-it {
   box-shadow: 0 0 0 2px currentColor;
 }
 
+/* Logo de salon : icône réduite à ~50 % de son cadre, partout */
+.room-logo svg { width: 50%; height: 50%; }
+.room-logo { transition: filter 160ms ease, transform 120ms ease; }
+button.room-logo:hover { filter: brightness(1.08); }
+button.room-logo:active { transform: scale(0.96); }
+
 /* Photo lightbox */
 .cg-lightbox {
   position: fixed;
