@@ -222,13 +222,23 @@ export function GalleryView({
                 onClick={() => setLightboxIndex(i)}
                 aria-label={`Voir la photo ${p.original_filename ?? i + 1}`}
               >
-                {p.url ? (
+                {p.thumbUrl ?? p.url ? (
                   /* eslint-disable-next-line @next/next/no-img-element */
                   <img
-                    src={p.url}
+                    src={p.thumbUrl ?? p.url ?? undefined}
                     alt={p.original_filename ?? ""}
                     className="photo-img"
                     loading="lazy"
+                    decoding="async"
+                    onError={(e) => {
+                      // Repli vers la pleine résolution si la vignette échoue
+                      // (ex. transformations d'image non activées sur Supabase).
+                      const img = e.currentTarget;
+                      if (p.url && !img.dataset.full) {
+                        img.dataset.full = "1";
+                        img.src = p.url;
+                      }
+                    }}
                   />
                 ) : (
                   <div className="photo-img img-ph">?</div>

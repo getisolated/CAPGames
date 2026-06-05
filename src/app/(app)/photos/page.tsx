@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { GalleryView } from "./gallery-view";
-import type { Photo, PhotoAlbum } from "@/lib/supabase/types";
+import type { PhotoWithUrl } from "@/hooks/use-photos-realtime";
+import type { PhotoAlbum } from "@/lib/supabase/types";
 
 export default async function PhotosPage() {
   const supabase = await createClient();
@@ -14,20 +15,22 @@ export default async function PhotosPage() {
       .order("created_at", { ascending: false }),
   ]);
 
-  // Génère des URL signées pour chaque photo (bucket privé)
-  const photosWithUrl = await Promise.all(
+  // URL signées (bucket privé) : une vignette légère pour la grille + la
+  // pleine résolution pour le lightbox / téléchargement.
+  const photosWithUrl: PhotoWithUrl[] = await Promise.all(
     (photos ?? []).map(async (p) => {
-      const { data } = await supabase.storage
-        .from("photos")
-        .createSignedUrl(p.storage_path, 60 * 60 * 4); // 4h
-      return { ...p, url: data?.signedUrl ?? null };
+      const [{ data: full }, { data: thumb }] = await Promise.all([
+        supabase.storage.from("photos").createSignedUrl(p.storage_path, 60 * 60 * 4),
+        supabase.storage.from("photos").createSignedUrl(p.storage_path, 60 * 60 * 4, {
+          transform: { width: 400, height: 400, resize: "cover", quality: 55 },
+        }),
+      ]);
+      const url = full?.signedUrl ?? null;
+      return { ...p, url, thumbUrl: thumb?.signedUrl ?? url } as PhotoWithUrl;
     })
   );
 
   return (
-    <GalleryView
-      albums={(albums ?? []) as PhotoAlbum[]}
-      photos={photosWithUrl as (Photo & { url: string | null })[]}
-    />
+    <GalleryView albums={(albums ?? []) as PhotoAlbum[]} photos={photosWithUrl} />
   );
 }

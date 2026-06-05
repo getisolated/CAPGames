@@ -5,7 +5,10 @@ import { createClient } from "@/lib/supabase/client";
 import { useRealtimeRefresh } from "@/hooks/use-realtime-refresh";
 import type { Photo } from "@/lib/supabase/types";
 
-export type PhotoWithUrl = Photo & { url: string | null };
+export type PhotoWithUrl = Photo & {
+  url: string | null;
+  thumbUrl: string | null;
+};
 
 /**
  * Maintient la liste des photos approuvées à jour en temps réel.
@@ -26,10 +29,14 @@ export function usePhotosRealtime(initial: PhotoWithUrl[]) {
     const rows = (data ?? []) as Photo[];
     const withUrls = await Promise.all(
       rows.map(async (p) => {
-        const { data: signed } = await supabase.storage
-          .from("photos")
-          .createSignedUrl(p.storage_path, 60 * 60 * 4);
-        return { ...p, url: signed?.signedUrl ?? null } as PhotoWithUrl;
+        const [{ data: full }, { data: thumb }] = await Promise.all([
+          supabase.storage.from("photos").createSignedUrl(p.storage_path, 60 * 60 * 4),
+          supabase.storage.from("photos").createSignedUrl(p.storage_path, 60 * 60 * 4, {
+            transform: { width: 400, height: 400, resize: "cover", quality: 55 },
+          }),
+        ]);
+        const url = full?.signedUrl ?? null;
+        return { ...p, url, thumbUrl: thumb?.signedUrl ?? url } as PhotoWithUrl;
       })
     );
     setPhotos(withUrls);
