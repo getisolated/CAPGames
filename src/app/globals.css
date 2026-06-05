@@ -1679,6 +1679,17 @@ button.room-logo:active { transform: scale(0.96); }
 .cg-inline-input:focus { box-shadow: 0 0 0 3px oklch(60% 0.18 28 / 0.15); }
 .cg-inline-input:disabled { opacity: 0.6; }
 
+/* Bloc « message de révélation » (carte question admin) */
+.cg-reveal {
+  margin-top: 10px; padding: 10px 12px; border-radius: 12px;
+  background: oklch(70% 0.14 57 / 0.08);
+  border: 1px solid oklch(70% 0.14 57 / 0.25);
+}
+.cg-reveal-label {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--tertiary-glow); margin-bottom: 4px;
+}
+
 /* ============================================================
    Admin — reskin des composants ui/* à l'identité CAP
    (orange dégradé, arrondis, densité confortable).

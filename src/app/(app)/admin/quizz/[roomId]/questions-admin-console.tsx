@@ -25,6 +25,7 @@ import {
   updateOptionImage,
   updateOptionLabel,
   updateQuestionImage,
+  updateQuestionReveal,
   updateQuestionText,
 } from "../actions";
 import type {
@@ -480,6 +481,27 @@ export function QuestionsAdminConsole({
                 </ul>
 
                 <AddOptionForm questionId={q.id} position={qOptions.length} />
+
+                {(q.reveal_message || editable) && (
+                  <div className="cg-reveal">
+                    <div className="cg-reveal-label">Message de révélation</div>
+                    <InlineEdit
+                      value={q.reveal_message ?? ""}
+                      editable={editable}
+                      allowEmpty
+                      emptyLabel="+ Ajouter un message de révélation"
+                      onSave={(text) => {
+                        const fd = new FormData();
+                        fd.set("id", q.id);
+                        fd.set("reveal_message", text);
+                        return updateQuestionReveal(fd);
+                      }}
+                      style={{ fontSize: 13, color: "var(--tertiary-glow)" }}
+                      placeholder="Message affiché à la révélation"
+                      ariaLabel="Modifier le message de révélation"
+                    />
+                  </div>
+                )}
               </div>
             );
           })}
@@ -716,6 +738,8 @@ function InlineEdit({
   style,
   placeholder,
   ariaLabel,
+  allowEmpty = false,
+  emptyLabel,
 }: {
   value: string;
   editable: boolean;
@@ -723,6 +747,8 @@ function InlineEdit({
   style?: React.CSSProperties;
   placeholder?: string;
   ariaLabel?: string;
+  allowEmpty?: boolean;
+  emptyLabel?: string;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
@@ -746,7 +772,7 @@ function InlineEdit({
   function commit() {
     if (savingRef.current) return;
     const next = draft.trim();
-    if (!next) {
+    if (!next && !allowEmpty) {
       toast.error("Ce champ ne peut pas être vide.");
       inputRef.current?.focus();
       return;
@@ -794,10 +820,17 @@ function InlineEdit({
     );
   }
 
+  if (!value && !editable) return null;
+  const showEmpty = !value && allowEmpty;
+
   return (
     <div
       className={editable ? "cg-inline-edit" : undefined}
-      style={style}
+      style={
+        showEmpty
+          ? { ...style, color: "var(--text-3)", fontStyle: "italic" }
+          : style
+      }
       role={editable ? "button" : undefined}
       tabIndex={editable ? 0 : undefined}
       title={editable ? "Cliquer pour modifier" : undefined}
@@ -813,7 +846,7 @@ function InlineEdit({
           : undefined
       }
     >
-      {value}
+      {showEmpty ? emptyLabel ?? "Ajouter…" : value}
     </div>
   );
 }

@@ -171,12 +171,16 @@ export async function updateQuestionReveal(formData: FormData) {
     .select("room_id")
     .eq("id", id)
     .maybeSingle();
+  if (!q) return { ok: false as const, error: "Question introuvable." };
+  if (await questionIsLive(supabase, id)) {
+    return { ok: false as const, error: QUESTION_LIVE_ERROR };
+  }
   const { error } = await supabase
     .from("quiz_questions")
     .update({ reveal_message: revealMessage })
     .eq("id", id);
   if (error) return { ok: false as const, error: error.message };
-  if (q?.room_id) revalidatePath(`/admin/quizz/${q.room_id}`);
+  if (q.room_id) revalidatePath(`/admin/quizz/${q.room_id}`);
   return { ok: true as const };
 }
 
