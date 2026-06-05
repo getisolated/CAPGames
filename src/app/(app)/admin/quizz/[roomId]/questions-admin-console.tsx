@@ -4,6 +4,7 @@ import { useMemo, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Icon } from "@/components/cap/icons";
 import { ActionForm } from "@/components/cap/action-form";
+import { ClearHistoryButton } from "../clear-history-button";
 import { useQuestionRound } from "@/hooks/use-question-round";
 import {
   useQuestionsRoomHistory,
@@ -502,9 +503,14 @@ export function QuestionsAdminConsole({
       <div className="ad-buzzes">
         <div className="ad-section-head">
           <div className="t-eyebrow">HISTORIQUE DES MANCHES · EN DIRECT</div>
-          <span className="ad-section-sub">
-            {finishedRounds.length} TERMINÉE{finishedRounds.length > 1 ? "S" : ""}
-          </span>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span className="ad-section-sub">
+              {finishedRounds.length} TERMINÉE{finishedRounds.length > 1 ? "S" : ""}
+            </span>
+            {finishedRounds.length > 0 && (
+              <ClearHistoryButton roomId={room.id} />
+            )}
+          </div>
         </div>
         {finishedRounds.length === 0 ? (
           <div className="ad-empty card">

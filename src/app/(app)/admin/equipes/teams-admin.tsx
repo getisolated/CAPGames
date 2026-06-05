@@ -51,99 +51,125 @@ export function TeamsAdmin({ teams, profiles, invites }: Props) {
     };
   }
 
+  const noTeam = profiles.filter((p) => !p.team_id);
+
   return (
-    <div className="space-y-8" style={{ margin: "calc(var(--spacing) * 4)" }}>
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Créer une équipe</h2>
-        <form onSubmit={handle(createTeam)} className="flex gap-2">
+    <div
+      style={{
+        padding: "0 22px",
+        display: "flex",
+        flexDirection: "column",
+        gap: 18,
+      }}
+    >
+      {/* Créer une équipe */}
+      <section>
+        <div className="ad-section-head">
+          <div className="t-eyebrow">Créer une équipe</div>
+        </div>
+        <form onSubmit={handle(createTeam)} className="flex flex-col gap-2">
           <Input name="name" placeholder="Nom de l'équipe" required />
-          <Button type="submit" disabled={isPending}>
+          <Button type="submit" className="w-full" disabled={isPending}>
             Créer
           </Button>
         </form>
       </section>
 
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Équipes</h2>
+      {/* Équipes */}
+      <section>
+        <div className="ad-section-head">
+          <div className="t-eyebrow">Équipes</div>
+          <span className="ad-section-sub">{teams.length}</span>
+        </div>
         <div className="grid gap-3 sm:grid-cols-2">
-          {teams.map((team) => (
-            <Card key={team.id} className="space-y-3 p-4">
-              <div className="flex items-center gap-3">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                {team.logo_url ? (
-                  <img
-                    src={team.logo_url}
-                    alt={team.name}
-                    className="size-14 rounded object-cover"
-                  />
-                ) : (
-                  <div className="size-14 rounded bg-muted" />
-                )}
-                <div className="flex-1">
+          {teams.map((team) => {
+            const members = profiles.filter((p) => p.team_id === team.id);
+            const teamInvites = invites.filter((i) => i.team_id === team.id);
+            return (
+              <Card key={team.id} className="gap-3 p-4">
+                <div className="flex items-center gap-3">
+                  {team.logo_url ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={team.logo_url}
+                      alt={team.name}
+                      className="size-12 shrink-0 rounded-[10px] object-cover"
+                    />
+                  ) : (
+                    <div className="size-12 shrink-0 rounded-[10px] bg-[oklch(100%_0_0_/_0.06)]" />
+                  )}
                   <form
                     onSubmit={handle(updateTeam)}
-                    className="flex items-center gap-2"
+                    className="flex min-w-0 flex-1 items-center gap-2"
                   >
                     <input type="hidden" name="id" value={team.id} />
                     <Input
                       name="name"
                       defaultValue={team.name}
-                      className="h-8"
+                      className="min-w-0 flex-1"
                     />
-                    <Button type="submit" size="sm" disabled={isPending}>
+                    <Button
+                      type="submit"
+                      size="sm"
+                      variant="secondary"
+                      disabled={isPending}
+                    >
                       OK
                     </Button>
                   </form>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Score : {team.score}
-                  </p>
+                  <form onSubmit={handle(deleteTeam)}>
+                    <input type="hidden" name="id" value={team.id} />
+                    <Button
+                      type="submit"
+                      size="icon-sm"
+                      variant="ghost"
+                      disabled={isPending}
+                      title="Supprimer l'équipe"
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
+                  </form>
                 </div>
-                <form onSubmit={handle(deleteTeam)}>
-                  <input type="hidden" name="id" value={team.id} />
+
+                <div
+                  className="t-mono"
+                  style={{
+                    fontSize: 10,
+                    color: "var(--text-3)",
+                    letterSpacing: "0.12em",
+                  }}
+                >
+                  {team.score} PTS
+                </div>
+
+                {/* Logo */}
+                <form
+                  onSubmit={handle(uploadTeamLogo)}
+                  className="flex flex-col gap-2"
+                >
+                  <input type="hidden" name="team_id" value={team.id} />
+                  <Input type="file" name="logo" accept="image/*" required />
                   <Button
                     type="submit"
-                    size="icon-sm"
-                    variant="ghost"
+                    size="sm"
+                    variant="secondary"
+                    className="w-full"
                     disabled={isPending}
-                    title="Supprimer"
                   >
-                    <Trash2 className="size-4" />
+                    <Upload className="size-4" /> Mettre à jour le logo
                   </Button>
                 </form>
-              </div>
 
-              <form
-                onSubmit={handle(uploadTeamLogo)}
-                className="flex items-center gap-2"
-              >
-                <input type="hidden" name="team_id" value={team.id} />
-                <Input
-                  type="file"
-                  name="logo"
-                  accept="image/*"
-                  required
-                  className="h-8"
-                />
-                <Button type="submit" size="sm" disabled={isPending}>
-                  <Upload className="size-4" /> Logo
-                </Button>
-              </form>
-
-              <details className="rounded border p-2 text-sm">
-                <summary className="cursor-pointer font-medium">
-                  Membres ({profiles.filter((p) => p.team_id === team.id).length})
-                </summary>
-                <ul className="mt-2 space-y-1">
-                  {profiles
-                    .filter((p) => p.team_id === team.id)
-                    .map((p) => (
+                {/* Membres */}
+                <details className="cg-details">
+                  <summary>Membres ({members.length})</summary>
+                  <ul className="cg-details-list">
+                    {members.map((p) => (
                       <li
                         key={p.id}
                         className="flex items-center justify-between gap-2"
                       >
-                        <span className="truncate">
-                          {p.full_name ?? p.email}
-                        </span>
+                        <span className="truncate">{p.full_name ?? p.email}</span>
                         <form onSubmit={handle(assignUserToTeam)}>
                           <input type="hidden" name="user_id" value={p.id} />
                           <input type="hidden" name="team_id" value="" />
@@ -158,35 +184,39 @@ export function TeamsAdmin({ teams, profiles, invites }: Props) {
                         </form>
                       </li>
                     ))}
-                </ul>
-              </details>
+                    {members.length === 0 && (
+                      <li className="text-[var(--text-4)]">Aucun membre.</li>
+                    )}
+                  </ul>
+                </details>
 
-              <form
-                onSubmit={handle(addEmailInvite)}
-                className="flex items-center gap-2"
-              >
-                <input type="hidden" name="team_id" value={team.id} />
-                <Input
-                  name="email"
-                  type="email"
-                  placeholder="email@domaine.com"
-                  required
-                  className="h-8"
-                />
-                <Button type="submit" size="sm" disabled={isPending}>
-                  <MailPlus className="size-4" /> Pré-inscrire
-                </Button>
-              </form>
+                {/* Pré-inscription */}
+                <form
+                  onSubmit={handle(addEmailInvite)}
+                  className="flex flex-col gap-2"
+                >
+                  <input type="hidden" name="team_id" value={team.id} />
+                  <Input
+                    name="email"
+                    type="email"
+                    placeholder="email@domaine.com"
+                    required
+                  />
+                  <Button
+                    type="submit"
+                    size="sm"
+                    variant="secondary"
+                    className="w-full"
+                    disabled={isPending}
+                  >
+                    <MailPlus className="size-4" /> Pré-inscrire
+                  </Button>
+                </form>
 
-              <details className="rounded border p-2 text-sm">
-                <summary className="cursor-pointer font-medium">
-                  E-mails pré-enregistrés (
-                  {invites.filter((i) => i.team_id === team.id).length})
-                </summary>
-                <ul className="mt-2 space-y-1">
-                  {invites
-                    .filter((i) => i.team_id === team.id)
-                    .map((i) => (
+                <details className="cg-details">
+                  <summary>E-mails pré-enregistrés ({teamInvites.length})</summary>
+                  <ul className="cg-details-list">
+                    {teamInvites.map((i) => (
                       <li
                         key={i.id}
                         className="flex items-center justify-between gap-2"
@@ -205,46 +235,69 @@ export function TeamsAdmin({ teams, profiles, invites }: Props) {
                         </form>
                       </li>
                     ))}
-                </ul>
-              </details>
-            </Card>
-          ))}
+                    {teamInvites.length === 0 && (
+                      <li className="text-[var(--text-4)]">Aucun e-mail.</li>
+                    )}
+                  </ul>
+                </details>
+              </Card>
+            );
+          })}
         </div>
       </section>
 
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Utilisateurs sans équipe</h2>
-        <ul className="space-y-1">
-          {profiles
-            .filter((p) => !p.team_id)
-            .map((p) => (
-              <li key={p.id}>
-                <form
-                  onSubmit={handle(assignUserToTeam)}
-                  className="flex items-center gap-2"
+      {/* Utilisateurs sans équipe */}
+      <section>
+        <div className="ad-section-head">
+          <div className="t-eyebrow">Utilisateurs sans équipe</div>
+          <span className="ad-section-sub">{noTeam.length}</span>
+        </div>
+        <ul style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {noTeam.map((p) => (
+            <li key={p.id} className="card" style={{ padding: "12px 14px" }}>
+              <form
+                onSubmit={handle(assignUserToTeam)}
+                className="flex flex-col gap-2"
+              >
+                <input type="hidden" name="user_id" value={p.id} />
+                <span
+                  className="truncate"
+                  style={{ fontSize: 14, fontWeight: 600 }}
                 >
-                  <input type="hidden" name="user_id" value={p.id} />
-                  <span className="flex-1 truncate text-sm">
-                    {p.full_name ?? p.email}
-                  </span>
-                  <Select name="team_id">
-                    <SelectTrigger className="h-8 w-44">
-                      <SelectValue placeholder="Choisir une équipe" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {teams.map((t) => (
-                        <SelectItem key={t.id} value={t.id}>
-                          {t.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button type="submit" size="sm" disabled={isPending}>
+                  {p.full_name ?? p.email}
+                </span>
+                <div className="flex gap-2">
+                  <div className="min-w-0 flex-1">
+                    <Select name="team_id">
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choisir une équipe" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {teams.map((t) => (
+                          <SelectItem key={t.id} value={t.id}>
+                            {t.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button
+                    type="submit"
+                    size="icon"
+                    disabled={isPending}
+                    aria-label="Assigner à l'équipe"
+                  >
                     <UserPlus className="size-4" />
                   </Button>
-                </form>
-              </li>
-            ))}
+                </div>
+              </form>
+            </li>
+          ))}
+          {noTeam.length === 0 && (
+            <li className="ad-empty card">
+              <div className="t-display">Tout le monde a une équipe</div>
+            </li>
+          )}
         </ul>
       </section>
     </div>

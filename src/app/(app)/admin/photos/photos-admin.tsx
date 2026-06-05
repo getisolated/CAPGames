@@ -32,6 +32,12 @@ import {
 
 type PhotoWithUrl = Photo & { url: string | null };
 
+const PHOTO_STATUS_LABEL: Record<string, string> = {
+  pending: "En attente",
+  approved: "Validée",
+  rejected: "Refusée",
+};
+
 export function PhotosAdmin({
   albums,
   photos,
@@ -190,10 +196,15 @@ export function PhotosAdmin({
               if (!res.ok) toast.error(res.error ?? "Erreur");
             });
           }}
-          className="flex gap-2"
+          className="flex flex-col gap-2 sm:flex-row"
         >
-          <Input name="name" placeholder="Nom de l'album" required />
-          <Button type="submit" disabled={isPending}>
+          <Input
+            name="name"
+            placeholder="Nom de l'album"
+            required
+            className="sm:flex-1"
+          />
+          <Button type="submit" disabled={isPending} className="w-full sm:w-auto">
             <FolderPlus className="size-4" /> Créer
           </Button>
         </form>
@@ -201,7 +212,7 @@ export function PhotosAdmin({
           {albums.map((a) => (
             <li
               key={a.id}
-              className="flex items-center justify-between rounded border p-3"
+              className="flex items-center justify-between gap-2 rounded-[12px] border p-3"
             >
               <span>{a.name}</span>
               <form
@@ -253,7 +264,9 @@ function PhotoGrid({
                 loading="lazy"
               />
             ) : null}
-            <Badge className="absolute left-2 top-2">{photo.status}</Badge>
+            <Badge className="absolute left-2 top-2">
+              {PHOTO_STATUS_LABEL[photo.status] ?? photo.status}
+            </Badge>
           </div>
           <div className="space-y-2 p-3">
             <p className="truncate text-xs text-muted-foreground">

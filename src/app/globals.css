@@ -1267,6 +1267,18 @@ h3 .t-serif-it {
 .ad-phase-actions .btn { width: 100%; }
 .ad-section-head { display: flex; justify-content: space-between; align-items: baseline; margin: 6px 2px 8px; }
 .ad-section-sub { font-size: 10px; color: var(--text-4); letter-spacing: 0.18em; font-family: var(--font-mono); }
+.ad-clear-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 28px; padding: 0 11px; border-radius: var(--r-pill);
+  background: oklch(45% 0.18 25 / 0.14); color: oklch(82% 0.14 28);
+  border: 1px solid oklch(58% 0.2 28 / 0.35);
+  font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
+  text-transform: uppercase; font-family: var(--font-body);
+  cursor: pointer; transition: background 180ms ease;
+}
+.ad-clear-btn svg { width: 13px; height: 13px; }
+.ad-clear-btn:hover:not(:disabled) { background: oklch(45% 0.18 25 / 0.22); }
+.ad-clear-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .ad-empty { padding: 22px; text-align: center; }
 .ad-empty .t-display { font-size: 22px; color: var(--text-2); }
 .ad-empty-sub { font-size: 11px; color: var(--text-4); margin-top: 4px; letter-spacing: 0.12em; font-family: var(--font-mono); }
@@ -1651,6 +1663,143 @@ button.room-logo:active { transform: scale(0.96); }
 .cg-opt-add svg { width: 15px; height: 15px; }
 .cg-opt-add:hover:not(:disabled) { background: oklch(100% 0 0 / 0.07); }
 .cg-opt-add:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ============================================================
+   Admin — reskin des composants ui/* à l'identité CAP
+   (orange dégradé, arrondis, densité confortable).
+   Ces composants ne sont utilisés que dans l'admin.
+   ============================================================ */
+/* Boutons (ui/button.tsx) */
+.cg-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  font-family: var(--font-body); font-weight: 600; letter-spacing: -0.005em;
+  border: 0; cursor: pointer; white-space: nowrap; user-select: none;
+  border-radius: var(--r-pill);
+  transition: transform 120ms ease, filter 200ms ease, background 200ms ease,
+    box-shadow 200ms ease, opacity 200ms ease, color 200ms ease;
+}
+.cg-btn:disabled { cursor: not-allowed; opacity: 0.45; }
+.cg-btn:active:not(:disabled) { transform: translateY(1px) scale(0.99); }
+.cg-btn--primary {
+  background: linear-gradient(180deg, var(--primary-glow), var(--primary));
+  color: oklch(98% 0.01 60);
+  box-shadow:
+    inset 0 1px 0 oklch(100% 0 0 / 0.25),
+    inset 0 -2px 0 oklch(0% 0 0 / 0.22),
+    0 12px 24px -12px oklch(50% 0.2 28 / 0.55),
+    0 0 0 1px oklch(60% 0.18 28 / 0.4);
+}
+.cg-btn--primary:hover:not(:disabled) { filter: brightness(1.06); }
+.cg-btn--secondary {
+  background: oklch(100% 0 0 / 0.05); color: var(--text);
+  box-shadow: inset 0 0 0 1px oklch(100% 0 0 / 0.12);
+}
+.cg-btn--secondary:hover:not(:disabled) { background: oklch(100% 0 0 / 0.09); }
+.cg-btn--outline {
+  background: transparent; color: var(--text);
+  box-shadow: inset 0 0 0 1px oklch(100% 0 0 / 0.18);
+}
+.cg-btn--outline:hover:not(:disabled) { background: oklch(100% 0 0 / 0.06); }
+.cg-btn--ghost { background: transparent; color: var(--text-2); }
+.cg-btn--ghost:hover:not(:disabled) { background: oklch(100% 0 0 / 0.07); color: var(--text); }
+.cg-btn--destructive {
+  background: oklch(40% 0.18 25 / 0.18); color: oklch(85% 0.16 28);
+  box-shadow: inset 0 0 0 1px oklch(58% 0.2 28 / 0.4);
+}
+.cg-btn--destructive:hover:not(:disabled) { background: oklch(45% 0.18 25 / 0.28); }
+.cg-btn--link { background: transparent; color: var(--primary-glow); }
+.cg-btn--link:hover:not(:disabled) { text-decoration: underline; }
+
+/* Carte (ui/card.tsx) */
+.cg-card {
+  display: flex; flex-direction: column;
+  background: linear-gradient(180deg, var(--surface-2), var(--surface));
+  border: 1px solid oklch(100% 0 0 / 0.06);
+  border-radius: var(--r-lg); color: var(--text);
+}
+
+/* Champ fichier (ui/input.tsx, type=file) */
+.cg-input[type="file"] { padding: 8px 12px; font-size: 12px; color: var(--text-2); }
+.cg-input[type="file"]::file-selector-button {
+  margin-right: 10px; padding: 7px 11px; border-radius: 9px; border: 0;
+  background: oklch(100% 0 0 / 0.08); color: var(--text);
+  font-family: var(--font-body); font-weight: 600; font-size: 12px; cursor: pointer;
+}
+.cg-input[type="file"]::file-selector-button:hover { background: oklch(100% 0 0 / 0.12); }
+
+/* Sélecteur (ui/select.tsx) */
+.cg-select-trigger {
+  display: inline-flex; align-items: center; justify-content: space-between; gap: 8px;
+  width: 100%; min-height: 44px; padding: 0 14px;
+  background: oklch(100% 0 0 / 0.04); border: 1px solid oklch(100% 0 0 / 0.1);
+  border-radius: 12px; color: var(--text); font-family: var(--font-body);
+  font-size: 14px; text-align: left; cursor: pointer; outline: 0;
+}
+.cg-select-trigger:focus-visible {
+  border-color: oklch(60% 0.18 28 / 0.6);
+  box-shadow: 0 0 0 4px oklch(60% 0.18 28 / 0.12);
+}
+.cg-select-content {
+  background: var(--surface-2); border: 1px solid oklch(100% 0 0 / 0.1);
+  border-radius: 14px; color: var(--text); overflow: hidden;
+  box-shadow: 0 20px 50px -20px oklch(0% 0 0 / 0.7);
+}
+.cg-select-item { border-radius: 9px; font-size: 14px; color: var(--text-2); }
+.cg-select-item[data-highlighted] { background: oklch(100% 0 0 / 0.07); color: var(--text); }
+.cg-select-trigger[data-placeholder] { color: var(--text-3); }
+.cg-input::placeholder, .cg-textarea::placeholder { color: var(--text-3); }
+
+/* Sous-onglets (ui/tabs.tsx) — pills comme les onglets admin */
+.cg-tabs-list { display: flex; flex-wrap: wrap; gap: 6px; background: transparent; padding: 0; }
+.cg-tab {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 38px; padding: 0 14px; border-radius: var(--r-pill);
+  background: transparent; border: 1px solid oklch(100% 0 0 / 0.08);
+  color: var(--text-2); font-family: var(--font-body); font-weight: 600;
+  font-size: 13px; cursor: pointer; white-space: nowrap; transition: all 160ms ease;
+}
+.cg-tab:hover { color: var(--text); background: oklch(100% 0 0 / 0.04); }
+.cg-tab[data-state="active"] {
+  background: linear-gradient(180deg, var(--tertiary-glow), var(--tertiary));
+  color: oklch(15% 0.04 35); border-color: var(--tertiary);
+  box-shadow: 0 4px 14px -4px oklch(60% 0.16 55 / 0.55);
+}
+
+/* Badge (ui/badge.tsx) — repris du style chip */
+.cg-badge {
+  display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+  padding: 5px 10px; border-radius: var(--r-pill);
+  background: oklch(20% 0.02 30 / 0.7); border: 1px solid oklch(100% 0 0 / 0.12);
+  font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text); font-family: var(--font-body); backdrop-filter: blur(6px);
+}
+.cg-badge--danger {
+  background: oklch(50% 0.2 28 / 0.2); border-color: oklch(58% 0.2 28 / 0.4);
+  color: oklch(82% 0.14 28);
+}
+
+/* Accordéons admin (details/summary) */
+.cg-details {
+  border: 1px solid oklch(100% 0 0 / 0.08); border-radius: 12px;
+  padding: 10px 12px; background: oklch(100% 0 0 / 0.02);
+}
+.cg-details > summary {
+  cursor: pointer; font-weight: 600; font-size: 13px; color: var(--text-2);
+  list-style: none;
+}
+.cg-details > summary::-webkit-details-marker { display: none; }
+.cg-details-list {
+  list-style: none; margin: 8px 0 0; padding: 0;
+  display: flex; flex-direction: column; gap: 6px;
+  font-size: 13px; color: var(--text-2);
+}
+
+/* Helper layout : pile d'actions pleine largeur (cartes admin sur mobile) */
+.cg-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.cg-actions > form, .cg-actions > a { display: flex; }
+.cg-actions > form > .cg-btn, .cg-actions > .cg-btn, .cg-actions > a > .cg-btn,
+.cg-actions > form { width: 100%; }
+.cg-actions .cg-btn { width: 100%; }
 
 /* ============================================================
    TWEAKS PANEL (dev only)

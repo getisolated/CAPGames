@@ -7,6 +7,12 @@ import { Icon } from "@/components/cap/icons";
 import { ActionForm } from "@/components/cap/action-form";
 import { createPoll, deletePoll, updatePollStatus } from "./actions";
 
+const STATUS_LABEL: Record<string, string> = {
+  draft: "Brouillon",
+  open: "Ouvert",
+  closed: "Fermé",
+};
+
 export default async function AdminPollsPage() {
   const supabase = await createClient();
   const { data: polls } = await supabase
@@ -28,7 +34,7 @@ export default async function AdminPollsPage() {
         >
           <Input name="title" placeholder="Titre du sondage" required />
           <Textarea name="description" placeholder="Description (optionnel)" />
-          <Button type="submit" className="self-start">Créer</Button>
+          <Button type="submit" className="w-full">Créer</Button>
         </ActionForm>
       </section>
 
@@ -39,51 +45,57 @@ export default async function AdminPollsPage() {
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {(polls ?? []).map((poll) => (
-            <div
-              key={poll.id}
-              className="card"
-              style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}
-            >
-              <div style={{ flex: 1, minWidth: 200 }}>
-                <div style={{ fontWeight: 600 }}>{poll.title}</div>
-                {poll.description && (
-                  <div className="t-mono" style={{ fontSize: 11, color: "var(--text-3)", marginTop: 2 }}>
-                    {poll.description}
-                  </div>
-                )}
+            <div key={poll.id} className="card" style={{ padding: "14px 16px" }}>
+              <div style={{ fontWeight: 600, fontSize: 15 }}>{poll.title}</div>
+              {poll.description && (
+                <div
+                  className="t-mono"
+                  style={{ fontSize: 11, color: "var(--text-3)", marginTop: 2 }}
+                >
+                  {poll.description}
+                </div>
+              )}
+              <div style={{ marginTop: 8 }}>
                 <span
                   className={
                     "chip " +
-                    (poll.status === "open" ? "live" : poll.status === "closed" ? "gold" : "")
+                    (poll.status === "open"
+                      ? "live"
+                      : poll.status === "closed"
+                        ? "gold"
+                        : "")
                   }
-                  style={{ marginTop: 6 }}
                 >
-                  {poll.status}
+                  {STATUS_LABEL[poll.status] ?? poll.status}
                 </span>
               </div>
-              <Link href={`/admin/sondages/${poll.id}`}>
-                <Button size="sm">Éditer</Button>
-              </Link>
-              {poll.status === "draft" && (
-                <ActionForm action={updatePollStatus} successMsg="Sondage ouvert.">
+              <div className="cg-actions">
+                <Link href={`/admin/sondages/${poll.id}`}>
+                  <Button className="w-full">
+                    Éditer <Icon.ArrowRight />
+                  </Button>
+                </Link>
+                {poll.status === "draft" && (
+                  <ActionForm action={updatePollStatus} successMsg="Sondage ouvert.">
+                    <input type="hidden" name="id" value={poll.id} />
+                    <input type="hidden" name="status" value="open" />
+                    <Button variant="secondary" className="w-full">Ouvrir</Button>
+                  </ActionForm>
+                )}
+                {poll.status === "open" && (
+                  <ActionForm action={updatePollStatus} successMsg="Sondage clôturé.">
+                    <input type="hidden" name="id" value={poll.id} />
+                    <input type="hidden" name="status" value="closed" />
+                    <Button variant="secondary" className="w-full">Clôturer</Button>
+                  </ActionForm>
+                )}
+                <ActionForm action={deletePoll} successMsg="Sondage supprimé.">
                   <input type="hidden" name="id" value={poll.id} />
-                  <input type="hidden" name="status" value="open" />
-                  <Button size="sm" variant="secondary">Ouvrir</Button>
+                  <Button variant="destructive" className="w-full">
+                    <Icon.X /> Supprimer
+                  </Button>
                 </ActionForm>
-              )}
-              {poll.status === "open" && (
-                <ActionForm action={updatePollStatus} successMsg="Sondage clôturé.">
-                  <input type="hidden" name="id" value={poll.id} />
-                  <input type="hidden" name="status" value="closed" />
-                  <Button size="sm" variant="secondary">Clôturer</Button>
-                </ActionForm>
-              )}
-              <ActionForm action={deletePoll} successMsg="Sondage supprimé.">
-                <input type="hidden" name="id" value={poll.id} />
-                <Button size="sm" variant="destructive" aria-label="Supprimer">
-                  <Icon.X />
-                </Button>
-              </ActionForm>
+              </div>
             </div>
           ))}
           {(!polls || polls.length === 0) && (

@@ -289,7 +289,7 @@ export function PollEditor({
               />
             </div>
           </div>
-          <Button type="submit" disabled={isPending}>
+          <Button type="submit" disabled={isPending} className="w-full">
             Ajouter le choix
           </Button>
         </form>

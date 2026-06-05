@@ -62,14 +62,7 @@ export default async function AdminQuizListPage() {
           {((rooms ?? []) as QuizRoom[]).map((room) => {
             return (
               <div key={room.id} className="card" style={{ padding: "14px 16px" }}>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 12,
-                    flexWrap: "wrap",
-                  }}
-                >
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <RoomStyleModal
                     roomId={room.id}
                     roomName={room.name}
@@ -79,27 +72,32 @@ export default async function AdminQuizListPage() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 700, fontSize: 15 }}>{room.name}</div>
                   </div>
+                </div>
+
+                <div className="cg-actions">
                   <Link href={`/admin/quizz/${room.id}`}>
-                    <Button size="sm">Animer</Button>
+                    <Button className="w-full">
+                      Éditer <Icon.ArrowRight />
+                    </Button>
                   </Link>
                   {room.status !== "open" && (
                     <ActionForm action={setRoomStatus} successMsg={null}>
                       <input type="hidden" name="id" value={room.id} />
                       <input type="hidden" name="status" value="open" />
-                      <Button size="sm" variant="secondary">Ouvrir</Button>
+                      <Button variant="secondary" className="w-full">Ouvrir</Button>
                     </ActionForm>
                   )}
                   {room.status === "open" && (
                     <ActionForm action={setRoomStatus} successMsg={null}>
                       <input type="hidden" name="id" value={room.id} />
                       <input type="hidden" name="status" value="closed" />
-                      <Button size="sm" variant="secondary">Fermer</Button>
+                      <Button variant="secondary" className="w-full">Fermer</Button>
                     </ActionForm>
                   )}
                   <ActionForm action={deleteRoom} successMsg="Salon supprimé.">
                     <input type="hidden" name="id" value={room.id} />
-                    <Button size="sm" variant="destructive" aria-label="Supprimer">
-                      <Icon.X />
+                    <Button variant="destructive" className="w-full">
+                      <Icon.X /> Supprimer
                     </Button>
                   </ActionForm>
                 </div>

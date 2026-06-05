@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { useBuzzerRealtime } from "@/hooks/use-buzzer-realtime";
 import { useRoomHistory } from "@/hooks/use-room-history";
 import { Icon } from "@/components/cap/icons";
+import { ClearHistoryButton } from "../clear-history-button";
 import { teamColor, teamShort } from "@/lib/team-style";
 import { endRound, setBuzzerStyle, startRound } from "../actions";
 import type {
@@ -190,9 +191,14 @@ export function AdminRoomConsole({
       <div className="ad-buzzes">
         <div className="ad-section-head">
           <div className="t-eyebrow">HISTORIQUE DES MANCHES · EN DIRECT</div>
-          <span className="ad-section-sub">
-            {finishedRounds.length} TERMINÉE{finishedRounds.length > 1 ? "S" : ""}
-          </span>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span className="ad-section-sub">
+              {finishedRounds.length} TERMINÉE{finishedRounds.length > 1 ? "S" : ""}
+            </span>
+            {finishedRounds.length > 0 && (
+              <ClearHistoryButton roomId={room.id} />
+            )}
+          </div>
         </div>
         {finishedRounds.length === 0 ? (
           <div className="ad-empty card">

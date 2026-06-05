@@ -459,6 +459,35 @@ export async function endQuestionRound(formData: FormData) {
   return { ok: true as const };
 }
 
+export async function clearRoomHistory(formData: FormData) {
+  await requireAdmin();
+  const roomId = String(formData.get("room_id") ?? "");
+  if (!roomId) return { ok: false as const, error: "Salon requis." };
+  const supabase = await createClient();
+
+  // Refus si une manche est en cours : on efface entre deux parties.
+  const { data: active } = await supabase
+    .from("rounds")
+    .select("id")
+    .eq("room_id", roomId)
+    .eq("is_active", true)
+    .limit(1);
+  if ((active?.length ?? 0) > 0) {
+    return {
+      ok: false as const,
+      error: "Termine la manche en cours avant d'effacer l'historique.",
+    };
+  }
+
+  // Supprime toutes les manches du salon → cascade sur quiz_answers et buzzes.
+  // Réinitialise aussi l'état « déjà jouée » (dérivé des manches terminées).
+  const { error } = await supabase.from("rounds").delete().eq("room_id", roomId);
+  if (error) return { ok: false as const, error: error.message };
+
+  revalidatePath(`/admin/quizz/${roomId}`);
+  return { ok: true as const };
+}
+
 export async function setBuzzerStyle(formData: FormData) {
   await requireAdmin();
   const roomId = String(formData.get("room_id") ?? "");
