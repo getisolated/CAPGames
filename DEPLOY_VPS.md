@@ -143,8 +143,10 @@ curl -s -H "apikey: $ANON_KEY" https://api.capgames.fr/rest/v1/teams   # [] atte
 Sur le Mac, depuis la racine du repo :
 
 ```sh
-# 1. données (dashboard Supabase → Connect → Session pooler, IPv4)
-CLOUD_DB_URL='postgresql://postgres.xxxx:MDP@aws-0-eu-central-1.pooler.supabase.com:5432/postgres' \
+# 1. données (dashboard Supabase → Connect → Session pooler, IPv4).
+#    L'hôte dépend de la région du projet (ex. aws-1-eu-central-1) : copier la
+#    chaîne exacte du dashboard, une erreur "tenant/user not found" = mauvais hôte.
+CLOUD_DB_URL='postgresql://postgres.xxxx:MDP@aws-1-eu-central-1.pooler.supabase.com:5432/postgres' \
   sh deploy/scripts/dump-cloud-db.sh
 
 # 2. fichiers des buckets (Settings → API → service_role)
