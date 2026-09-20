@@ -39,3 +39,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# env examples (le pattern .env* ci-dessus les ignorerait)
+!.env.local.example
+!deploy/.env.example
+
+# déploiement VPS : secrets, données Postgres/Storage, exports
+deploy/.env
+deploy/volumes/db/data/
+deploy/data/

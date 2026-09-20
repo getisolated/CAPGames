@@ -1,0 +1,300 @@
+# =============================================================================
+# CAP Games — stack de production sur VPS
+#
+# Supabase auto-hébergé ALLÉGÉ (dérivé du docker-compose officiel) :
+#   db, auth (GoTrue), rest (PostgREST), realtime, storage, imgproxy
+# Retirés : studio, meta, analytics/logflare, vector, supavisor, edge functions,
+#           et la gateway Envoy/Kong (Caddy fait le routage + TLS).
+#
+# + app (Next.js) + caddy (reverse proxy HTTPS automatique)
+#
+# Commandes :
+#   docker compose pull && docker compose up -d
+#   docker compose logs -f auth
+#   docker compose exec db psql -U supabase_admin -d postgres
+# =============================================================================
+
+name: capgames
+
+services:
+
+  # ---------------------------------------------------------------------------
+  # Reverse proxy : TLS Let's Encrypt + routage /auth /rest /realtime /storage
+  # ---------------------------------------------------------------------------
+  caddy:
+    image: caddy:2-alpine
+    container_name: capgames-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      APP_SITE: ${APP_SITE}
+      API_SITE: ${API_SITE}
+      APP_ORIGIN: ${SITE_URL}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./volumes/caddy/auth-templates:/srv/auth-templates:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    # Pas de depends_on : Caddy démarre seul et renvoie 502 tant qu'un service
+    # n'est pas prêt, au lieu de bloquer l'API si l'image app est indisponible.
+
+  # ---------------------------------------------------------------------------
+  # Application Next.js (image construite par GitHub Actions → GHCR)
+  # ---------------------------------------------------------------------------
+  app:
+    image: ${APP_IMAGE:-ghcr.io/getisolated/capgames:latest}
+    container_name: capgames-app
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_SUPABASE_URL: ${SUPABASE_PUBLIC_URL}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${ANON_KEY}
+      SUPABASE_SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY}
+      ALLOWED_EMAIL_DOMAINS: ${ALLOWED_EMAIL_DOMAINS}
+      AUTH_BYPASS_OTP: ${AUTH_BYPASS_OTP:-false}
+    extra_hosts:
+      # Le serveur Next.js appelle l'URL publique de l'API ; on la résout vers
+      # l'hôte (où Caddy écoute) plutôt que de ressortir par Internet.
+      - "${API_HOST}:host-gateway"
+    depends_on:
+      auth:
+        condition: service_healthy
+      rest:
+        condition: service_healthy
+
+  # ---------------------------------------------------------------------------
+  # Supabase Auth (GoTrue) — OTP e-mail via SMTP (Resend)
+  # ---------------------------------------------------------------------------
+  auth:
+    container_name: supabase-auth
+    image: supabase/gotrue:v2.196.0
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9999/health"]
+      timeout: 5s
+      interval: 5s
+      retries: 3
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: 9999
+      API_EXTERNAL_URL: ${API_EXTERNAL_URL}
+
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+
+      GOTRUE_SITE_URL: ${SITE_URL}
+      GOTRUE_URI_ALLOW_LIST: ${ADDITIONAL_REDIRECT_URLS}
+      GOTRUE_DISABLE_SIGNUP: ${DISABLE_SIGNUP}
+
+      GOTRUE_JWT_ADMIN_ROLES: service_role
+      GOTRUE_JWT_AUD: authenticated
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      GOTRUE_JWT_EXP: ${JWT_EXPIRY}
+      GOTRUE_JWT_SECRET: ${JWT_SECRET}
+      GOTRUE_JWT_ISSUER: ${API_EXTERNAL_URL}
+
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"
+      GOTRUE_EXTERNAL_PHONE_ENABLED: "false"
+      GOTRUE_EXTERNAL_ANONYMOUS_USERS_ENABLED: "false"
+      # Pas de double confirmation : l'OTP suffit (équivalent "Confirm email" décoché)
+      GOTRUE_MAILER_AUTOCONFIRM: "true"
+
+      # OTP à 6 chiffres, valable 1 h (mêmes réglages que le cloud)
+      GOTRUE_MAILER_OTP_LENGTH: 6
+      GOTRUE_MAILER_OTP_EXP: 3600
+      GOTRUE_SMTP_MAX_FREQUENCY: 30s
+
+      # Limites de débit : les téléphones d'une soirée partagent la même IP
+      # publique (wifi du lieu). Les défauts GoTrue (30 mails/h, 30 vérifs
+      # par 5 min et par IP) bloqueraient les connexions en masse.
+      GOTRUE_RATE_LIMIT_EMAIL_SENT: ${RATE_LIMIT_EMAIL_SENT:-300}
+      GOTRUE_RATE_LIMIT_OTP: ${RATE_LIMIT_OTP:-1000}
+      GOTRUE_RATE_LIMIT_VERIFY: ${RATE_LIMIT_VERIFY:-2000}
+      GOTRUE_RATE_LIMIT_TOKEN_REFRESH: ${RATE_LIMIT_TOKEN_REFRESH:-5000}
+
+      GOTRUE_SMTP_ADMIN_EMAIL: ${SMTP_ADMIN_EMAIL}
+      GOTRUE_SMTP_HOST: ${SMTP_HOST}
+      GOTRUE_SMTP_PORT: ${SMTP_PORT}
+      GOTRUE_SMTP_USER: ${SMTP_USER}
+      GOTRUE_SMTP_PASS: ${SMTP_PASS}
+      GOTRUE_SMTP_SENDER_NAME: ${SMTP_SENDER_NAME}
+
+      # Template e-mail OTP servi par Caddy sur le réseau interne (port 8081)
+      GOTRUE_MAILER_SUBJECTS_MAGIC_LINK: ${MAILER_SUBJECT_OTP}
+      GOTRUE_MAILER_TEMPLATES_MAGIC_LINK: http://caddy:8081/magic-link.html
+
+      GOTRUE_MAILER_URLPATHS_INVITE: /auth/v1/verify
+      GOTRUE_MAILER_URLPATHS_CONFIRMATION: /auth/v1/verify
+      GOTRUE_MAILER_URLPATHS_RECOVERY: /auth/v1/verify
+      GOTRUE_MAILER_URLPATHS_EMAIL_CHANGE: /auth/v1/verify
+
+  # ---------------------------------------------------------------------------
+  # PostgREST — API REST sur le schéma public
+  # ---------------------------------------------------------------------------
+  rest:
+    container_name: supabase-rest
+    image: postgrest/postgrest:v14.17
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "postgrest", "--ready"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+    environment:
+      PGRST_DB_URI: postgres://authenticator:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+      PGRST_DB_SCHEMAS: public
+      PGRST_DB_MAX_ROWS: 1000
+      PGRST_DB_EXTRA_SEARCH_PATH: public
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_ADMIN_SERVER_PORT: 3001
+      PGRST_ADMIN_SERVER_HOST: localhost
+      PGRST_JWT_SECRET: ${JWT_SECRET}
+      PGRST_DB_USE_LEGACY_GUCS: "false"
+      PGRST_APP_SETTINGS_JWT_EXP: ${JWT_EXPIRY}
+    command: ["postgrest"]
+
+  # ---------------------------------------------------------------------------
+  # Realtime — postgres_changes (buzzer, scores, sondages, photos)
+  # Le nom du conteneur est imposé : Realtime déduit le tenant du sous-domaine
+  # de l'en-tête Host (realtime-dev). Caddy force cet en-tête.
+  # ---------------------------------------------------------------------------
+  realtime:
+    container_name: realtime-dev.supabase-realtime
+    image: supabase/realtime:v2.134.10
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sSfL --head -o /dev/null -H \"Authorization: Bearer ${ANON_KEY}\" http://localhost:4000/api/tenants/realtime-dev/health"]
+      timeout: 5s
+      interval: 30s
+      retries: 3
+      start_period: 10s
+    environment:
+      PORT: 4000
+      DB_HOST: ${POSTGRES_HOST}
+      DB_PORT: ${POSTGRES_PORT}
+      DB_USER: supabase_admin
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_NAME: ${POSTGRES_DB}
+      DB_AFTER_CONNECT_QUERY: 'SET search_path TO _realtime'
+      DB_ENC_KEY: ${REALTIME_DB_ENC_KEY}
+      API_JWT_SECRET: ${JWT_SECRET}
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE}
+      METRICS_JWT_SECRET: ${JWT_SECRET}
+      ERL_AFLAGS: -proto_dist inet_tcp
+      DNS_NODES: "''"
+      RLIMIT_NOFILE: "10000"
+      APP_NAME: realtime
+      SEED_SELF_HOST: "true"
+      RUN_JANITOR: "true"
+      DISABLE_HEALTHCHECK_LOGGING: "true"
+
+  # ---------------------------------------------------------------------------
+  # Storage — fichiers dans le volume Docker "storage-data" (ext4 : le backend
+  # fichier a besoin des attributs étendus xattr), vignettes via imgproxy
+  # ---------------------------------------------------------------------------
+  storage:
+    container_name: supabase-storage
+    image: supabase/storage-api:v1.74.0
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      rest:
+        condition: service_started
+      imgproxy:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://storage:5000/status"]
+      timeout: 5s
+      interval: 5s
+      retries: 3
+      start_period: 10s
+    environment:
+      ANON_KEY: ${ANON_KEY}
+      SERVICE_KEY: ${SERVICE_ROLE_KEY}
+      POSTGREST_URL: http://rest:3000
+      AUTH_JWT_SECRET: ${JWT_SECRET}
+      DATABASE_URL: postgres://supabase_storage_admin:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+      STORAGE_PUBLIC_URL: ${SUPABASE_PUBLIC_URL}
+      REQUEST_ALLOW_X_FORWARDED_PATH: "true"
+      FILE_SIZE_LIMIT: ${STORAGE_FILE_SIZE_LIMIT:-52428800}
+      STORAGE_BACKEND: file
+      GLOBAL_S3_BUCKET: stub
+      FILE_STORAGE_BACKEND_PATH: /var/lib/storage
+      TENANT_ID: stub
+      REGION: stub
+      ENABLE_IMAGE_TRANSFORMATION: "true"
+      IMGPROXY_URL: http://imgproxy:5001
+    volumes:
+      - storage-data:/var/lib/storage
+
+  imgproxy:
+    container_name: supabase-imgproxy
+    image: darthsim/imgproxy:v3.31.4
+    restart: unless-stopped
+    volumes:
+      - storage-data:/var/lib/storage:ro
+    healthcheck:
+      test: ["CMD", "imgproxy", "health"]
+      timeout: 5s
+      interval: 5s
+      retries: 3
+    environment:
+      IMGPROXY_BIND: ":5001"
+      IMGPROXY_LOCAL_FILESYSTEM_ROOT: /
+      IMGPROXY_USE_ETAG: "true"
+      IMGPROXY_AUTO_WEBP: "true"
+      IMGPROXY_MAX_SRC_RESOLUTION: 16.8
+
+  # ---------------------------------------------------------------------------
+  # Postgres (image Supabase : extensions, rôles, schémas auth/storage/realtime)
+  # Non exposé sur l'hôte : accès via `docker compose exec db psql`.
+  # ---------------------------------------------------------------------------
+  db:
+    container_name: supabase-db
+    image: supabase/postgres:17.6.1.136
+    restart: unless-stopped
+    volumes:
+      - ./volumes/db/realtime.sql:/docker-entrypoint-initdb.d/migrations/99-realtime.sql:Z
+      - ./volumes/db/webhooks.sql:/docker-entrypoint-initdb.d/init-scripts/98-webhooks.sql:Z
+      - ./volumes/db/roles.sql:/docker-entrypoint-initdb.d/init-scripts/99-roles.sql:Z
+      - ./volumes/db/jwt.sql:/docker-entrypoint-initdb.d/init-scripts/99-jwt.sql:Z
+      - ./volumes/db/data:/var/lib/postgresql/data:Z
+      - db-config:/etc/postgresql-custom
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    environment:
+      POSTGRES_HOST: /var/run/postgresql
+      PGPORT: ${POSTGRES_PORT}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB}
+      POSTGRES_DB: ${POSTGRES_DB}
+      JWT_EXP: ${JWT_EXPIRY}
+    command:
+      - postgres
+      - -c
+      - config_file=/etc/postgresql/postgresql.conf
+      - -c
+      - log_min_messages=fatal
+
+volumes:
+  db-config:
+  storage-data:
+  caddy-data:
+  caddy-config:

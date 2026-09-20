@@ -1,0 +1,37 @@
+# =============================================================================
+# Override LOCAL (Mac) : test de la stack complète sans TLS ni Resend.
+#
+#   cd deploy
+#   sh scripts/gen-env.sh --local          # crée .env avec des URLs locales
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml up -d
+#
+# - Mailpit capture les e-mails OTP : http://localhost:8025
+# - App : http://localhost:8080  | API : http://localhost:8000
+# =============================================================================
+
+services:
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: capgames-mailpit
+    restart: unless-stopped
+    ports:
+      - "8025:8025"
+
+  auth:
+    environment:
+      GOTRUE_SMTP_HOST: mailpit
+      GOTRUE_SMTP_PORT: 1025
+      GOTRUE_SMTP_USER: ""
+      GOTRUE_SMTP_PASS: ""
+    depends_on:
+      mailpit:
+        condition: service_started
+
+  caddy:
+    ports:
+      - "8080:8080"
+      - "8000:8000"
+
+  app:
+    # Image construite localement : sh scripts/build-local.sh
+    image: capgames-app:local

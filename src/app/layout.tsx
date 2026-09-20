@@ -6,7 +6,6 @@ import {
   JetBrains_Mono,
 } from "next/font/google";
 import { Toaster } from "sonner";
-import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 const display = Big_Shoulders({
@@ -58,7 +57,6 @@ export default function RootLayout({
       <body className="antialiased">
         <div className="cg-stage">{children}</div>
         <Toaster richColors position="top-center" theme="dark" />
-        <Analytics />
       </body>
     </html>
   );

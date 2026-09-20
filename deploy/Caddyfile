@@ -1,0 +1,96 @@
+# =============================================================================
+# CAP Games — Caddy : TLS automatique + gateway Supabase
+#
+# APP_SITE  : capgames.fr            (prod)  | http://localhost:8080 (local)
+# API_SITE  : api.capgames.fr        (prod)  | http://localhost:8000 (local)
+# APP_ORIGIN: https://capgames.fr    → seule origine autorisée en CORS
+#
+# Remplace la gateway Envoy/Kong du compose officiel : les services Supabase
+# vérifient eux-mêmes les JWT (apikey anon / service_role / token utilisateur).
+# =============================================================================
+
+{
+	# Décommenter pour tester Let's Encrypt en staging (évite les quotas) :
+	# acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
+}
+
+# --- Application Next.js -----------------------------------------------------
+{$APP_SITE} {
+	encode zstd gzip
+	reverse_proxy app:3000
+}
+
+# --- API Supabase ------------------------------------------------------------
+{$API_SITE} {
+	encode zstd gzip
+
+	# CORS : l'app (capgames.fr) appelle l'API (api.capgames.fr) depuis le
+	# navigateur. Caddy répond aux preflights et impose ses propres en-têtes.
+	@cors_preflight method OPTIONS
+	handle @cors_preflight {
+		header Access-Control-Allow-Origin "{$APP_ORIGIN}"
+		header Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD"
+		header Access-Control-Allow-Headers "Authorization, apikey, Content-Type, Prefer, Range, X-Client-Info, X-Supabase-Api-Version, X-Upsert, Cache-Control, Accept, Accept-Profile, Content-Profile, x-upsert, x-metadata"
+		header Access-Control-Expose-Headers "Content-Range, Range, X-Total-Count"
+		header Access-Control-Max-Age "86400"
+		header Access-Control-Allow-Credentials "true"
+		respond "" 204
+	}
+
+	# En-têtes CORS sur toutes les réponses (remplacent ceux des services)
+	header {
+		>Access-Control-Allow-Origin "{$APP_ORIGIN}"
+		>Access-Control-Allow-Credentials "true"
+		>Access-Control-Expose-Headers "Content-Range, Range, X-Total-Count"
+		-Server
+	}
+
+	# Endpoints internes de Realtime interdits depuis l'extérieur
+	@rt_admin path /realtime/v1/api/* /realtime/v1/api
+	handle @rt_admin {
+		respond "Access is forbidden." 403
+	}
+
+	# Racine OpenAPI de PostgREST : réservée (liste tout le schéma)
+	@rest_root path /rest/v1 /rest/v1/
+	handle @rest_root {
+		respond "Access is forbidden." 403
+	}
+
+	# --- Auth (GoTrue) ---
+	handle_path /auth/v1/* {
+		reverse_proxy auth:9999
+	}
+
+	# --- REST (PostgREST) ---
+	handle_path /rest/v1/* {
+		reverse_proxy rest:3000
+	}
+
+	# --- Realtime (WebSocket) : /realtime/v1/websocket → /socket/websocket ---
+	handle_path /realtime/v1/* {
+		rewrite * /socket{uri}
+		reverse_proxy realtime-dev.supabase-realtime:4000 {
+			# Realtime déduit le tenant ("realtime-dev") du Host reçu
+			header_up Host {upstream_hostport}
+		}
+	}
+
+	# --- Storage ---
+	handle_path /storage/v1/* {
+		request_body {
+			max_size 60MB
+		}
+		reverse_proxy storage:5000
+	}
+
+	handle {
+		respond "Not found" 404
+	}
+}
+
+# --- Templates e-mail GoTrue (réseau Docker uniquement, port non publié) -----
+http://:8081 {
+	root * /srv/auth-templates
+	file_server
+}
